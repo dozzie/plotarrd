@@ -74,10 +74,37 @@ def browse_add_datasource():
     filename = flask.request.values['file'].strip('/')
     filename_abs = os.path.join(app.config['RRD_PATH'], filename)
 
+    if 'finish' in flask.request.values and \
+       'datasource' in flask.request.values:
+        datasources = flask.request.values.getlist('datasource')
+        if 'datasources' in flask.session:
+            del flask.session['datasources']
+        # TODO: save in some other session variable and redirect
+        return flask.render_template('browse_list.html',
+                                     file = filename,
+                                     datasources = datasources)
+
+    if 'datasources' not in flask.session:
+        flask.session['datasources'] = []
+
+    if 'ds' in flask.request.values:
+        ds = flask.request.values['ds']
+        if ds not in flask.session['datasources']:
+            flask.session['datasources'].append(ds)
+
+    if 'remove_ds' in flask.request.values:
+        ds = flask.request.values['remove_ds']
+        if ds in flask.session['datasources']:
+            flask.session['datasources'].remove(ds)
+
+    # force a copy, as Flask might not notice the change
+    flask.session['datasources'] = list(flask.session['datasources'])
+
     datasources = rrd.list_variables(filename_abs)
 
     return flask.render_template('browse_add_datasource.html',
-                                 file = filename, datasources = datasources)
+                                 file = filename, datasources = datasources,
+                                 added = flask.session['datasources'])
 
 #-----------------------------------------------------------------------------
 # vim:ft=python:foldmethod=marker

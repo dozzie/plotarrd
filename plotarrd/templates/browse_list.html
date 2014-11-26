@@ -1,0 +1,14 @@
+<html>
+<head>
+<title>plotarrd</title>
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<p>
+Added datasources <i>{{ datasources|join(", ") }}</i> from file
+<tt>{{ file }}</tt>.
+</p>
+
+</body>
+</html>

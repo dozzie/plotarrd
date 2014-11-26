@@ -9,11 +9,38 @@
 
 <p>Datasources:</p>
 
-<ul>
-{% for s in datasources %}
-  <li><i>{{ s }}</i>
+<p>Already added datasources:</p>
+
+<form target='{{ url_for("browse_add_datasource", file = file) }}' method='post'>
+<table border="0">
+{% for s in added %}
+  <tr>
+    <td><i>{{ s }}</i></td>
+    <td><button class="link" type='submit' name='remove_ds' value='{{ s }}'>remove</button></td>
+  </tr>
 {% endfor %}
-</ul>
+</table>
+</form>
+
+<form target='{{ url_for("browse_add_datasource", file = file) }}' method='post'>
+<table border="0">
+{% for s in datasources %}
+  <tr>
+    <td><i>{{ s }}</i></td>
+    <td><button class="link" type='submit' name='ds' value='{{ s }}'>add</button></td>
+  </tr>
+{% endfor %}
+</table>
+</form>
+
+{% if added|length > 0 %}
+<form target='{{ url_for("browse_add_datasource", file = file) }}' method='post'>
+{% for s in added %}
+  <input type="hidden" name='datasource' value='{{ s }}'/>
+{% endfor %}
+  <button type='submit' name='finish'>finish</button>
+</form>
+{% endif %}
 
 </body>
 </html>

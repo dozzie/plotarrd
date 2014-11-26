@@ -1,1 +1,10 @@
 /* this is empty style */
+
+button.link {
+  background: none;
+  border: none;
+  padding: 0;
+  /* border is optional */
+  border-bottom: 1px solid #444;
+  cursor: pointer;
+}
