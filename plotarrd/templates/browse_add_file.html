@@ -1,0 +1,35 @@
+<html>
+<head>
+{% if path == "" %}
+<title>plotarrd -- root</title>
+{% else %}
+<title>plotarrd -- {{ path }}</title>
+{% endif %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+{% if path == "" %}
+<h1>root directory</h1>
+{% else %}
+<h1><tt>{{ path }}</tt></h1>
+{% endif %}
+
+<p>Subdirs:</p>
+
+<ul>
+{% for d in subdirs %}
+  <li><a href="{{ url_for('browse_add_file', dir = path + '/' + d) }}"><tt>{{ d }}</tt></a>
+{% endfor %}
+</ul>
+
+<p>Files:</p>
+
+<ul>
+{% for f in files %}
+  <li><a href="{{ url_for('browse_add_datasource', file = path + '/' + f) }}"><tt>{{ f }}</tt></a>
+{% endfor %}
+</ul>
+
+</body>
+</html>

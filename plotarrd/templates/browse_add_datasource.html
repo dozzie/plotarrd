@@ -1,0 +1,19 @@
+<html>
+<head>
+<title>plotarrd -- {{ file }}</title>
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<h1><tt>{{ file }}</tt></h1>
+
+<p>Datasources:</p>
+
+<ul>
+{% for s in datasources %}
+  <li><i>{{ s }}</i>
+{% endfor %}
+</ul>
+
+</body>
+</html>
