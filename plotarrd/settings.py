@@ -16,6 +16,8 @@ RRD_PATH = '/var/lib/collectd/rrd'
 
 SECRET_KEY_FILE = 'secret.txt'
 
+DEBUG = True
+
 #-----------------------------------------------------------------------------
 
 IMAGE_STORAGE_ABS = os.path.join(APP_ROOT, IMAGE_STORAGE)
