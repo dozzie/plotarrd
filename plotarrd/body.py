@@ -3,6 +3,7 @@
 import flask
 import plotarrd.settings
 import os
+import rrd
 
 #-----------------------------------------------------------------------------
 
@@ -13,8 +14,17 @@ app.config.from_object(plotarrd.settings)
 
 @app.route("/")
 def index():
-    url = flask.url_for('images', image = 'foo')
-    return flask.render_template('index.html', url = url)
+    rrds = rrd.list_files(app.config['RRD_PATH'])
+    return flask.render_template('index.html', rrds = rrds)
+
+@app.route("/plot/<path:db>")
+def plot(db):
+    db_abs = os.path.join(app.config['RRD_PATH'], db)
+    # TODO: error handling
+    variables = rrd.list_variables(db_abs)
+    return flask.render_template('plot.html', rrd = db, variables = variables)
+
+#-----------------------------------------------------------------------------
 
 @app.route("/images/<image>.png")
 def images(image):

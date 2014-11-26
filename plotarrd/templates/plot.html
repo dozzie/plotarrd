@@ -1,15 +1,19 @@
 <html>
 <head>
-<title>plotarrd</title>
+<title>plotarrd -- {{ rrd }}</title>
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-<h1>foof</h1>
+<h1>nabla</h1>
+
+<p>
+Values for <tt>{{ rrd }}</tt>:
+</p>
 
 <ul>
-{% for db in rrds %}
-  <li><a href="{{ url_for('plot', db = db) }}"><tt>{{ db }}</tt></a>
+{% for v in variables %}
+  <li><i>{{ v }}</i>
 {% endfor %}
 </ul>
 
