@@ -64,7 +64,7 @@ function add_datasource(name) {
 
 <p>Already added datasources:</p>
 
-<form target='{{ url_for("browse_datasources", file = file) }}' method='post'>
+<form action='{{ url_for("browse_datasources", file = file) }}' method='post'>
   <table border="0" id="added">
   </table>
 
