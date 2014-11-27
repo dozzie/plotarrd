@@ -119,14 +119,19 @@ def browse_datasources():
     filename = flask.request.values['file'].strip('/')
 
     if flask.request.method == 'POST':
-        new_vars = [
-            {"rrd": filename, "ds": ds}
+        new_vars = flask.session.get('graph', []) + [
+            {"rrd": filename, "ds": ds, "name": None}
             for ds in flask.request.values.getlist('datasource')
         ]
-        if 'graph' not in flask.session:
-            flask.session['graph'] = new_vars
-        else:
-            flask.session['graph'] += new_vars
+        used_names = {}
+        for v in new_vars:
+            if v["ds"] not in used_names:
+                v["name"] = v["ds"]
+                used_names[v["ds"]] = 1
+            else:
+                v["name"] = "%s%d" % (v["ds"], used_names[v["ds"]])
+                used_names[v["ds"]] += 1
+        flask.session['graph'] = new_vars
         return flask.redirect(flask.url_for('plot'))
 
     filename_abs = os.path.join(app.config['RRD_PATH'], filename)

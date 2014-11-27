@@ -15,6 +15,7 @@
 {% endif %}
       <form action="{{ url_for('plot_save') }}" method="post">
 {% for v in values %}
+        <input type="hidden" name="name" value="{{ v.name }}" />
         <input type="hidden" name="rrd" value="{{ v.rrd }}" />
         <input type="hidden" name="ds" value="{{ v.ds }}" />
 {% endfor %}
@@ -34,7 +35,7 @@
         </tr>
 {% for v in values %}
         <tr>
-          <td><b>???</b></td>
+          <td><i>{{ v.name }}</i></td>
           <td><tt>{{ v.rrd }}</tt></td>
           <td><i>{{ v.ds }}</i></td>
           <td>

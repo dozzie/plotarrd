@@ -34,18 +34,12 @@ def list_variables(filename):
 #-----------------------------------------------------------------------------
 
 def plot(values, rrd_root, width = None, height = None, title = None, timescale = None):
-    used_names = {}
     defs = []
     lines = []
     auto_colour_idx = 0
 
     for v in values:
-        if v['ds'] in used_names:
-            val_name = "%s%d" % (v['ds'], used_names[v['ds']])
-            used_names[v['ds']] += 1
-        else:
-            val_name = v['ds']
-            used_names[v['ds']] = 1
+        val_name = v['name']
         datasource = v['ds']
         rrd_file = os.path.join(rrd_root, v['rrd'])
         consolidation_function = "AVERAGE" # let's hope it's there
