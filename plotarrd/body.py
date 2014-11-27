@@ -41,12 +41,20 @@ def index():
 @app.route("/plot", methods = ["GET", "POST"])
 def plot():
     if flask.request.method == "POST" and 'graph' in flask.session:
-        # 'delete' in flask.request.values
-        entry = int(flask.request.values['delete'])
-        if entry < len(flask.session['graph']):
-            new_list = list(flask.session['graph'])
-            del new_list[entry]
-            flask.session['graph'] = new_list
+        if 'rename' in flask.request.values:
+            entry = int(flask.request.values['rename'])
+            if entry < len(flask.session['graph']):
+                new_list = list(flask.session['graph'])
+                # TODO: sanitize name
+                new_list[entry]['name'] = flask.request.values['name']
+                flask.session['graph'] = new_list
+        elif 'delete' in flask.request.values:
+            entry = int(flask.request.values['delete'])
+            if entry < len(flask.session['graph']):
+                new_list = list(flask.session['graph'])
+                del new_list[entry]
+                flask.session['graph'] = new_list
+        # so hitting "refresh" don't complain about resubmitting data
         return flask.redirect(flask.url_for('plot'))
 
     if 'graph' not in flask.session or len(flask.session['graph']) == 0:

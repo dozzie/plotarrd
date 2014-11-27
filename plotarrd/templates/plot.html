@@ -35,7 +35,12 @@
         </tr>
 {% for v in values %}
         <tr>
-          <td><i>{{ v.name }}</i></td>
+          <td>
+            <form method="post">
+              <input type="text" size="12" name="name" value="{{ v.name }}" />
+              <button type="submit" name="rename" value="{{ loop.index0 }}">rename</button>
+            </form>
+          </td>
           <td><tt>{{ v.rrd }}</tt></td>
           <td><i>{{ v.ds }}</i></td>
           <td>
