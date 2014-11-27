@@ -19,7 +19,7 @@
 
 <ul>
 {% for d in subdirs %}
-  <li><a href="{{ url_for('browse_files', dir = path + '/' + d) }}"><tt>{{ d }}</tt></a>
+  <li><a href="{{ url_for('browse_files', dir = path + '/' + d) }}"><tt>{{ d }}</tt></a></li>
 {% endfor %}
 </ul>
 
@@ -27,7 +27,7 @@
 
 <ul>
 {% for f in files %}
-  <li><a href="{{ url_for('browse_datasources', file = path + '/' + f) }}"><tt>{{ f }}</tt></a>
+  <li><a href="{{ url_for('browse_datasources', file = path + '/' + f) }}"><tt>{{ f }}</tt></a></li>
 {% endfor %}
 </ul>
 
