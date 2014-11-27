@@ -5,6 +5,9 @@ import plotarrd.settings
 import os
 import rrd
 
+import base64
+import json
+
 #-----------------------------------------------------------------------------
 
 app = flask.Flask(__name__)
@@ -12,17 +15,21 @@ app.config.from_object(plotarrd.settings)
 
 #-----------------------------------------------------------------------------
 
+def encode(data):
+    return base64.b64encode(json.dumps(data))
+
+def decode(data):
+    try:
+        return json.loads(base64.b64decode(data))
+    except:
+        flask.abort(400)
+
+#-----------------------------------------------------------------------------
+
 @app.route("/")
 def index():
     rrds = rrd.list_files(app.config['RRD_PATH'])
     return flask.render_template('index.html', rrds = rrds)
-
-@app.route("/plot/<path:db>")
-def plot(db):
-    db_abs = os.path.join(app.config['RRD_PATH'], db)
-    # TODO: error handling
-    variables = rrd.list_variables(db_abs)
-    return flask.render_template('plot.html', rrd = db, variables = variables)
 
 #-----------------------------------------------------------------------------
 
@@ -35,6 +42,28 @@ def images(image):
         return flask.Response(response = img, content_type = 'image/png')
     except IOError:
         return flask.Response(status = 404)
+
+#-----------------------------------------------------------------------------
+
+@app.route("/plot")
+def plot():
+    if 'graph' not in flask.session or len(flask.session['graph']) == 0:
+        vals = []
+        url = ""
+    else:
+        vals = flask.session['graph']
+        params = {
+            'values': vals,
+        }
+        url = flask.url_for('render', params = encode(params))
+
+    return flask.render_template('plot.html', image_url = url, values = vals)
+
+@app.route("/render/<params>")
+def render(params):
+    params = decode(params)
+    img = rrd.plot(values = params['values'], rrd_root = app.config['RRD_PATH'])
+    return flask.Response(response = img, content_type = 'image/png')
 
 #-----------------------------------------------------------------------------
 
@@ -65,6 +94,8 @@ def browse_add_file():
                                  files = sorted(files),
                                  subdirs = sorted(subdirs))
 
+#-----------------------------------------------------------------------------
+
 @app.route("/browse/add_datasource", methods = ["POST", "GET"])
 def browse_add_datasource():
     if 'file' not in flask.request.values:
@@ -74,11 +105,15 @@ def browse_add_datasource():
     filename = flask.request.values['file'].strip('/')
 
     if flask.request.method == 'POST':
-        datasources = flask.request.values.getlist('datasource')
-        # TODO: save in some session variable and redirect
-        return flask.render_template('browse_list.html',
-                                     file = filename,
-                                     datasources = datasources)
+        new_vars = [
+            {"rrd": filename, "ds": ds}
+            for ds in flask.request.values.getlist('datasource')
+        ]
+        if 'graph' not in flask.session:
+            flask.session['graph'] = new_vars
+        else:
+            flask.session['graph'] += new_vars
+        return flask.redirect(flask.url_for('plot'))
 
     filename_abs = os.path.join(app.config['RRD_PATH'], filename)
     datasources = rrd.list_variables(filename_abs)

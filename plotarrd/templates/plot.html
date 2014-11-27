@@ -1,21 +1,43 @@
 <html>
 <head>
-<title>plotarrd -- {{ rrd }}</title>
+<title>plotarrd</title>
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-<h1>nabla</h1>
-
-<p>
-Values for <tt>{{ rrd }}</tt>:
-</p>
-
-<ul>
-{% for v in variables %}
-  <li><i>{{ v }}</i>
+<table border="1">
+  <tr>
+    <td id="graph_cell">
+{% if image_url == "" %}
+      <b>No image</b>
+{% else %}
+      <img src="{{ image_url }}" />
+{% endif %}
+      <form action="" method="post">
+        <!-- TODO: input type=hidden with params -->
+        <input type="submit" name="save" value="save" /> |
+        <input type="submit" name="discard" value="discard" />
+      </form>
+    </td>
+    <td id="values">
+      <a href="{{ url_for('browse_add_file') }}">add new</a>
+      <table border="1">
+        <tr>
+          <th>label</th>
+          <th>file</th>
+          <th>DS</th>
+        </tr>
+{% for v in values %}
+        <tr>
+          <td><b>???</b></td>
+          <td><tt>{{ v.rrd }}</tt></td>
+          <td><i>{{ v.ds }}</i></td>
+        </tr>
 {% endfor %}
-</ul>
+      </table>
+    </td>
+  </tr>
+</table>
 
 </body>
 </html>
