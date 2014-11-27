@@ -2,6 +2,50 @@
 <head>
 <title>plotarrd -- {{ file }}</title>
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+<script>
+
+function create_form_label(name) {
+  var hidden_input = document.createElement("input");
+  hidden_input.type = "hidden";
+  hidden_input.name = "datasource";
+  hidden_input.value = name;
+
+  var label = document.createElement("i");
+  label.appendChild(document.createTextNode(name));
+
+  var div = document.createElement("div");
+  div.appendChild(hidden_input);
+  div.appendChild(label);
+
+  return div;
+}
+
+function add_datasource(name) {
+  var search_id = "added " + name; // to reliably remove element later
+
+  // don't add something already added
+  if (document.getElementById(search_id) != null)
+    return;
+
+  var added_table = document.getElementById("added");
+  var row = added_table.insertRow(-1);
+  row.id = search_id;
+
+  var label = create_form_label(name);
+
+  var link = document.createElement("a");
+  link.href = "#";
+  link.innerHTML = "remove";
+  link.onclick = function () {
+    var row = document.getElementById(search_id);
+    row.parentElement.removeChild(row);
+  };
+
+  row.insertCell(0).appendChild(label);
+  row.insertCell(1).appendChild(link);
+}
+
+</script>
 </head>
 <body>
 
@@ -9,38 +53,23 @@
 
 <p>Datasources:</p>
 
-<p>Already added datasources:</p>
-
-<form target='{{ url_for("browse_add_datasource", file = file) }}' method='post'>
-<table border="0">
-{% for s in added %}
-  <tr>
-    <td><i>{{ s }}</i></td>
-    <td><button class="link" type='submit' name='remove_ds' value='{{ s }}'>remove</button></td>
-  </tr>
-{% endfor %}
-</table>
-</form>
-
-<form target='{{ url_for("browse_add_datasource", file = file) }}' method='post'>
 <table border="0">
 {% for s in datasources %}
   <tr>
     <td><i>{{ s }}</i></td>
-    <td><button class="link" type='submit' name='ds' value='{{ s }}'>add</button></td>
+    <td><a href="#" onclick="add_datasource('{{ s }}')">add</a></td>
   </tr>
 {% endfor %}
 </table>
-</form>
 
-{% if added|length > 0 %}
+<p>Already added datasources:</p>
+
 <form target='{{ url_for("browse_add_datasource", file = file) }}' method='post'>
-{% for s in added %}
-  <input type="hidden" name='datasource' value='{{ s }}'/>
-{% endfor %}
+  <table border="0" id="added">
+  </table>
+
   <button type='submit' name='finish'>finish</button>
 </form>
-{% endif %}
 
 </body>
 </html>
