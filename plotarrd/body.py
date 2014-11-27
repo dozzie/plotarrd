@@ -36,16 +36,12 @@ def index():
 @app.route("/plot", methods = ["GET", "POST"])
 def plot():
     if flask.request.method == "POST" and 'graph' in flask.session:
-        if 'discard' in flask.request.values:
-            del flask.session['graph']
-        elif 'save' in flask.request.values:
-            pass # TODO
-        elif 'delete' in flask.request.values:
-            entry = int(flask.request.values['delete'])
-            if entry < len(flask.session['graph']):
-                new_list = list(flask.session['graph'])
-                del new_list[entry]
-                flask.session['graph'] = new_list
+        # 'delete' in flask.request.values
+        entry = int(flask.request.values['delete'])
+        if entry < len(flask.session['graph']):
+            new_list = list(flask.session['graph'])
+            del new_list[entry]
+            flask.session['graph'] = new_list
         return flask.redirect(flask.url_for('plot'))
 
     if 'graph' not in flask.session or len(flask.session['graph']) == 0:
@@ -63,8 +59,25 @@ def plot():
 @app.route("/render/<params>")
 def render(params):
     params = decode(params)
+    # TODO: sanity checks on params
     img = rrd.plot(values = params['values'], rrd_root = app.config['RRD_PATH'])
     return flask.Response(response = img, content_type = 'image/png')
+
+#-----------------------------------------------------------------------------
+
+@app.route("/edit/save", methods = ["POST"])
+def plot_save():
+    # TODO:
+    #   * sanitize the submitted form
+    #   * save the submitted form (flask.request.values.getlist() for "rrd"
+    #     and "ds")
+
+    if 'discard' in flask.request.values:
+        del flask.session['graph']
+        return flask.redirect(flask.url_for('plot'))
+
+    # 'save' in flask.request.values
+    pass # TODO
 
 #-----------------------------------------------------------------------------
 
