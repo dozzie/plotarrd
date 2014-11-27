@@ -68,8 +68,8 @@ def render(params):
 
 #-----------------------------------------------------------------------------
 
-@app.route("/browse/add_file")
-def browse_add_file():
+@app.route("/edit/browse")
+def browse_files():
     if 'dir' in flask.request.values:
         # TODO: sanity check (leading slash, "..")
         dirname = flask.request.values['dir'].strip('/')
@@ -90,7 +90,7 @@ def browse_add_file():
         elif e.endswith('.rrd') and os.path.isfile(ee):
             files.append(e)
 
-    return flask.render_template('browse_add_file.html',
+    return flask.render_template('browse_files.html',
                                  path = dirname,
                                  files = sorted(files),
                                  subdirs = sorted(subdirs))
@@ -100,7 +100,7 @@ def browse_add_file():
 @app.route("/browse/add_datasource", methods = ["POST", "GET"])
 def browse_add_datasource():
     if 'file' not in flask.request.values:
-        return flask.redirect(flask.url_for('browse_add_file'))
+        return flask.redirect(flask.url_for('browse_files'))
 
     # TODO: sanity check (leading slash, "..")
     filename = flask.request.values['file'].strip('/')
