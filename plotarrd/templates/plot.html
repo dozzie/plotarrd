@@ -32,6 +32,11 @@
           <td><b>???</b></td>
           <td><tt>{{ v.rrd }}</tt></td>
           <td><i>{{ v.ds }}</i></td>
+          <td>
+            <form method="post">
+              <button type="submit" name="delete" value="{{ loop.index0 }}">remove</button>
+            </form>
+          </td>
         </tr>
 {% endfor %}
       </table>

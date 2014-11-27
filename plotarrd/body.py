@@ -33,8 +33,21 @@ def index():
 
 #-----------------------------------------------------------------------------
 
-@app.route("/plot")
+@app.route("/plot", methods = ["GET", "POST"])
 def plot():
+    if flask.request.method == "POST" and 'graph' in flask.session:
+        if 'discard' in flask.request.values:
+            del flask.session['graph']
+        elif 'save' in flask.request.values:
+            pass # TODO
+        elif 'delete' in flask.request.values:
+            entry = int(flask.request.values['delete'])
+            if entry < len(flask.session['graph']):
+                new_list = list(flask.session['graph'])
+                del new_list[entry]
+                flask.session['graph'] = new_list
+        return flask.redirect(flask.url_for('plot'))
+
     if 'graph' not in flask.session or len(flask.session['graph']) == 0:
         vals = []
         url = ""
