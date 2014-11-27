@@ -97,8 +97,8 @@ def browse_files():
 
 #-----------------------------------------------------------------------------
 
-@app.route("/browse/add_datasource", methods = ["POST", "GET"])
-def browse_add_datasource():
+@app.route("/edit/datasources", methods = ["POST", "GET"])
+def browse_datasources():
     if 'file' not in flask.request.values:
         return flask.redirect(flask.url_for('browse_files'))
 
@@ -119,7 +119,7 @@ def browse_add_datasource():
     filename_abs = os.path.join(app.config['RRD_PATH'], filename)
     datasources = rrd.list_variables(filename_abs)
 
-    return flask.render_template('browse_add_datasource.html',
+    return flask.render_template('browse_datasources.html',
                                  file = filename, datasources = datasources)
 
 #-----------------------------------------------------------------------------

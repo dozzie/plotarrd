@@ -27,7 +27,7 @@
 
 <ul>
 {% for f in files %}
-  <li><a href="{{ url_for('browse_add_datasource', file = path + '/' + f) }}"><tt>{{ f }}</tt></a>
+  <li><a href="{{ url_for('browse_datasources', file = path + '/' + f) }}"><tt>{{ f }}</tt></a>
 {% endfor %}
 </ul>
 
