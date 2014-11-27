@@ -33,18 +33,6 @@ def index():
 
 #-----------------------------------------------------------------------------
 
-@app.route("/images/<image>.png")
-def images(image):
-    # TODO: sanity check on `image'
-    img_path = os.path.join(app.config['IMAGE_STORAGE_ABS'], image + '.png')
-    try:
-        img = open(img_path).read()
-        return flask.Response(response = img, content_type = 'image/png')
-    except IOError:
-        return flask.Response(status = 404)
-
-#-----------------------------------------------------------------------------
-
 @app.route("/plot")
 def plot():
     if 'graph' not in flask.session or len(flask.session['graph']) == 0:
