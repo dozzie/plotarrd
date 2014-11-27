@@ -28,8 +28,13 @@ def decode(data):
 
 @app.route("/")
 def index():
-    rrds = rrd.list_files(app.config['RRD_PATH'])
-    return flask.render_template('index.html', rrds = rrds)
+    saved_graphs = [
+        g[:-5]
+        for g in os.listdir(app.config['SAVED_GRAPHS_ABS'])
+        if g.endswith('.json')
+    ]
+    saved_graphs.sort()
+    return flask.render_template('index.html', graphs = saved_graphs)
 
 #-----------------------------------------------------------------------------
 
@@ -56,12 +61,27 @@ def plot():
 
     return flask.render_template('plot.html', image_url = url, values = vals)
 
+#-----------------------------------------------------------------------------
+
 @app.route("/render/<params>")
 def render(params):
     params = decode(params)
     # TODO: sanity checks on params
     img = rrd.plot(values = params['values'], rrd_root = app.config['RRD_PATH'])
     return flask.Response(response = img, content_type = 'image/png')
+
+@app.route("/graph/<name>")
+def graph(name):
+    try:
+        # TODO: sanity checks on name
+        params_path = os.path.join(app.config['SAVED_GRAPHS_ABS'],
+                                   name + '.json')
+        params = json.load(open(params_path))
+        img = rrd.plot(values = params['values'],
+                       rrd_root = app.config['RRD_PATH'])
+        return flask.Response(response = img, content_type = 'image/png')
+    except IOError:
+        flask.abort(404)
 
 #-----------------------------------------------------------------------------
 
@@ -77,7 +97,26 @@ def plot_save():
         return flask.redirect(flask.url_for('plot'))
 
     # 'save' in flask.request.values
-    pass # TODO
+    graph_name = flask.request.values['graph_name']
+    rrds = flask.request.values.getlist('rrd')
+    dses = flask.request.values.getlist('ds')
+    names = flask.request.values.getlist('name')
+    # TODO: sanity checks (graph_name =~ /^[a-zA-Z0-9_]+$/, list lengths equal
+    # and >0, paths in rrds, names distinct and appropriate, ...)
+    values = [
+        {"rrd": rrds[i], "ds": dses[i], "name": names[i]}
+        for i in range(len(rrds))
+    ]
+
+    params = {
+        'values': values,
+    }
+    params_path = os.path.join(app.config['SAVED_GRAPHS_ABS'],
+                               graph_name + ".json")
+    with open(params_path, 'w') as f:
+        json.dump(params, f)
+        f.write('\n')
+    return flask.redirect(flask.url_for('plot'))
 
 #-----------------------------------------------------------------------------
 

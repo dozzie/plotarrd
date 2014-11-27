@@ -5,11 +5,11 @@
 </head>
 <body>
 
-<h1>foof</h1>
+<h1>Saved graphs</h1>
 
 <ul>
-{% for db in rrds %}
-  <li><a href="{{ url_for('plot', db = db) }}"><tt>{{ db }}</tt></a>
+{% for g in graphs %}
+  <li><a href="{{ url_for('graph', name = g) }}">{{ g }}</a></li>
 {% endfor %}
 </ul>
 
