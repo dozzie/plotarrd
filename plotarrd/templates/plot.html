@@ -5,6 +5,12 @@
 </head>
 <body>
 
+{% if not graph_name %}
+<h1>Graph details</h1>
+{% else %}
+<h1>Graph details: <i>{{ graph_name }}</i></h1>
+{% endif %}
+
 <table border="1">
   <tr>
     <td id="graph_cell">
