@@ -38,25 +38,8 @@ def index():
 
 #-----------------------------------------------------------------------------
 
-@app.route("/plot", methods = ["GET", "POST"])
+@app.route("/plot", methods = ["GET"])
 def plot():
-    if flask.request.method == "POST" and 'graph' in flask.session:
-        if 'rename' in flask.request.values:
-            entry = int(flask.request.values['rename'])
-            if entry < len(flask.session['graph']):
-                new_list = list(flask.session['graph'])
-                # TODO: sanitize name
-                new_list[entry]['name'] = flask.request.values['name']
-                flask.session['graph'] = new_list
-        elif 'delete' in flask.request.values:
-            entry = int(flask.request.values['delete'])
-            if entry < len(flask.session['graph']):
-                new_list = list(flask.session['graph'])
-                del new_list[entry]
-                flask.session['graph'] = new_list
-        # so hitting "refresh" don't complain about resubmitting data
-        return flask.redirect(flask.url_for('plot'))
-
     if 'graph' not in flask.session or len(flask.session['graph']) == 0:
         vals = []
         url = ""
@@ -68,6 +51,24 @@ def plot():
         url = flask.url_for('render', params = encode(params))
 
     return flask.render_template('plot.html', image_url = url, values = vals)
+
+@app.route("/plot", methods = ["POST"])
+def plot_POST():
+    if 'rename' in flask.request.values:
+        entry = int(flask.request.values['rename'])
+        if entry < len(flask.session['graph']):
+            new_list = list(flask.session['graph'])
+            # TODO: sanitize name
+            new_list[entry]['name'] = flask.request.values['name']
+            flask.session['graph'] = new_list
+    elif 'delete' in flask.request.values:
+        entry = int(flask.request.values['delete'])
+        if entry < len(flask.session['graph']):
+            new_list = list(flask.session['graph'])
+            del new_list[entry]
+            flask.session['graph'] = new_list
+    # so hitting "refresh" don't complain about resubmitting data
+    return flask.redirect(flask.url_for('plot'))
 
 #-----------------------------------------------------------------------------
 
@@ -172,35 +173,38 @@ def browse_files():
 
 #-----------------------------------------------------------------------------
 
-@app.route("/edit/datasources", methods = ["POST", "GET"])
+@app.route("/edit/datasources", methods = ["GET"])
 def browse_datasources():
     if 'file' not in flask.request.values:
         return flask.redirect(flask.url_for('browse_files'))
 
     # TODO: sanity check (leading slash, "..")
     filename = flask.request.values['file'].strip('/')
-
-    if flask.request.method == 'POST':
-        new_vars = flask.session.get('graph', []) + [
-            {"rrd": filename, "ds": ds, "name": None}
-            for ds in flask.request.values.getlist('datasource')
-        ]
-        used_names = {}
-        for v in new_vars:
-            if v["ds"] not in used_names:
-                v["name"] = v["ds"]
-                used_names[v["ds"]] = 1
-            else:
-                v["name"] = "%s%d" % (v["ds"], used_names[v["ds"]])
-                used_names[v["ds"]] += 1
-        flask.session['graph'] = new_vars
-        return flask.redirect(flask.url_for('plot'))
-
     filename_abs = os.path.join(app.config['RRD_PATH'], filename)
     datasources = rrd.list_variables(filename_abs)
 
     return flask.render_template('browse_datasources.html',
                                  file = filename, datasources = datasources)
+
+@app.route("/edit/datasources", methods = ["POST"])
+def browse_datasources_POST():
+    # TODO: sanity check (leading slash, "..")
+    filename = flask.request.values['file'].strip('/')
+
+    new_vars = flask.session.get('graph', []) + [
+        {"rrd": filename, "ds": ds, "name": None}
+        for ds in flask.request.values.getlist('datasource')
+    ]
+    used_names = {}
+    for v in new_vars:
+        if v["ds"] not in used_names:
+            v["name"] = v["ds"]
+            used_names[v["ds"]] = 1
+        else:
+            v["name"] = "%s%d" % (v["ds"], used_names[v["ds"]])
+            used_names[v["ds"]] += 1
+    flask.session['graph'] = new_vars
+    return flask.redirect(flask.url_for('plot'))
 
 #-----------------------------------------------------------------------------
 # vim:ft=python:foldmethod=marker
