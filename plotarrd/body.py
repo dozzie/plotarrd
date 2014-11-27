@@ -85,6 +85,21 @@ def graph(name):
         params_path = os.path.join(app.config['SAVED_GRAPHS_ABS'],
                                    name + '.json')
         params = json.load(open(params_path))
+        url = flask.url_for('render_saved', name = name)
+        return flask.render_template('plot.html',
+                                     graph_name = name,
+                                     image_url = url,
+                                     values = params['values'])
+    except IOError:
+        flask.abort(404)
+
+@app.route("/graph/<name>.png")
+def render_saved(name):
+    try:
+        # TODO: sanity checks on name
+        params_path = os.path.join(app.config['SAVED_GRAPHS_ABS'],
+                                   name + '.json')
+        params = json.load(open(params_path))
         img = rrd.plot(values = params['values'],
                        rrd_root = app.config['RRD_PATH'])
         return flask.Response(response = img, content_type = 'image/png')
