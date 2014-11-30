@@ -94,15 +94,27 @@ def graph(name):
     except IOError:
         flask.abort(404)
 
+# ?size={Width}x{Height}&timespan={Time}
+# {Time} can be "15min", "8h", "1d", "4w", "1month", "1y" and so on
 @app.route("/graph/<name>.png")
 def render_saved(name):
+    if 'size' in flask.request.args:
+        width, height = flask.request.args['size'].split('x')
+        width = int(width)
+        height = int(height)
+    else:
+        width = None
+        height = None
+    timescale = flask.request.args.get('timescale')
+
     try:
         # TODO: sanity checks on name
         params_path = os.path.join(app.config['SAVED_GRAPHS_ABS'],
                                    name + '.json')
         params = json.load(open(params_path))
         img = rrd.plot(values = params['values'],
-                       rrd_root = app.config['RRD_PATH'])
+                       rrd_root = app.config['RRD_PATH'],
+                       width = width, height = height, timescale = timescale)
         return flask.Response(response = img, content_type = 'image/png')
     except IOError:
         flask.abort(404)
