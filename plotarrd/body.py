@@ -187,7 +187,7 @@ def plot_save():
     with open(params_path, 'w') as f:
         json.dump(params, f)
         f.write('\n')
-    return flask.redirect(flask.url_for('plot'))
+    return flask.redirect(flask.url_for('graph', name = graph_name))
 
 #-----------------------------------------------------------------------------
 
