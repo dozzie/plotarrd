@@ -26,7 +26,11 @@
     <label for="graph_name">graph name</label>
     <input type="text" id="graph_name" size="20" name="graph_name" value="{{ graph_name }}" />
     <input type="submit" name="save" value="save" /> |
+{% if not graph_name %}
     <input type="submit" name="discard" value="discard" />
+{% else %}
+    <button type="submit" name="delete" value="{{ graph_name }}">delete</button>
+{% endif %}
   </form>
 </div>
 

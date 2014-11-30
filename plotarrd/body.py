@@ -79,7 +79,7 @@ def render(params):
     img = rrd.plot(values = params['values'], rrd_root = app.config['RRD_PATH'])
     return flask.Response(response = img, content_type = 'image/png')
 
-@app.route("/graph/<name>")
+@app.route("/graph/<name>", methods = ["GET"])
 def graph(name):
     try:
         # TODO: sanity checks on name
@@ -93,6 +93,33 @@ def graph(name):
                                      values = params['values'])
     except IOError:
         flask.abort(404)
+
+@app.route("/graph/<name>", methods = ["POST"])
+def graph_POST(name):
+    # either "rename" or "delete" button for a variable
+
+    # TODO: sanity checks on name
+    params_path = os.path.join(app.config['SAVED_GRAPHS_ABS'], name + '.json')
+    try:
+        params = json.load(open(params_path))
+    except IOError:
+        flask.abort(404)
+
+    # load the session
+    flask.session['graph'] = params['values']
+
+    # do the POST thing
+    if 'rename' in flask.request.values:
+        entry = int(flask.request.values['rename'])
+        if entry < len(flask.session['graph']):
+            # TODO: sanitize name
+            flask.session['graph'][entry]['name'] = flask.request.values['name']
+    elif 'delete' in flask.request.values:
+        entry = int(flask.request.values['delete'])
+        if entry < len(flask.session['graph']):
+            del flask.session['graph'][entry]
+
+    return flask.redirect(flask.url_for('plot'))
 
 # ?size={Width}x{Height}&timespan={Time}
 # {Time} can be "15min", "8h", "1d", "4w", "1month", "1y" and so on
@@ -129,7 +156,15 @@ def plot_save():
     #     and "ds")
 
     if 'discard' in flask.request.values:
-        del flask.session['graph']
+        if 'graph' in flask.session:
+            del flask.session['graph']
+        return flask.redirect(flask.url_for('plot'))
+    elif 'delete' in flask.request.values:
+        # TODO: sanitize the graph name
+        graph_name = flask.request.values['delete']
+        params_path = os.path.join(app.config['SAVED_GRAPHS_ABS'],
+                                   graph_name + ".json")
+        os.unlink(params_path)
         return flask.redirect(flask.url_for('plot'))
 
     # 'save' in flask.request.values
