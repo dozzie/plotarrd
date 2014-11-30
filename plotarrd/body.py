@@ -148,6 +148,14 @@ def render_saved(name):
 
 #-----------------------------------------------------------------------------
 
+@app.route("/edit/new")
+def start_anew():
+    if 'graph' in flask.session:
+        del flask.session['graph']
+    return flask.redirect(flask.url_for('plot'))
+
+#-----------------------------------------------------------------------------
+
 @app.route("/edit/save", methods = ["POST"])
 def plot_save():
     # TODO:
