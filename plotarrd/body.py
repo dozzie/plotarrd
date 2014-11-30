@@ -200,23 +200,32 @@ def browse_datasources():
 
 @app.route("/edit/datasources", methods = ["POST"])
 def browse_datasources_POST():
+    prev_dses = flask.session.get('graph', [])
     # TODO: sanity check (leading slash, "..")
     filename = flask.request.values['file'].strip('/')
+    new_dses = flask.request.values.getlist('datasource')
 
-    new_vars = flask.session.get('graph', []) + [
-        {"rrd": filename, "ds": ds, "name": None}
-        for ds in flask.request.values.getlist('datasource')
-    ]
-    used_names = {}
-    for v in new_vars:
-        if v["ds"] not in used_names:
-            v["name"] = v["ds"]
-            used_names[v["ds"]] = 1
-        else:
-            v["name"] = "%s%d" % (v["ds"], used_names[v["ds"]])
-            used_names[v["ds"]] += 1
-    flask.session['graph'] = new_vars
+    flask.session['graph'] = graph_datasources(prev_dses, filename, new_dses)
     return flask.redirect(flask.url_for('plot'))
+
+#-----------------------------------------------------------------------------
+
+def graph_datasources(prevlist, filename, dslist):
+    used_names = {e["name"]: 0 for e in prevlist}
+
+    def name_for(e):
+        if e not in used_names:
+            used_names[e] = 0
+            return e
+        else:
+            used_names[e] += 1
+            return "%s%d" % (e, used_names[e])
+
+    new_dses = [
+        {"rrd": filename, "ds": e, "name": name_for(e)}
+        for e in dslist
+    ]
+    return prevlist + new_dses
 
 #-----------------------------------------------------------------------------
 # vim:ft=python:foldmethod=marker
