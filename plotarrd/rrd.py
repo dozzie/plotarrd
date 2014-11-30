@@ -72,7 +72,7 @@ def plot(values, rrd_root, width = None, height = None, title = None, timescale 
     if timescale is not None:
         rrd_commands.extend([
             '--start', 'now - %s' % (timescale,),
-            '--end', 'now - 1' % (timescale,),
+            '--end', 'now - 1',
         ])
 
     rrd_commands.extend(defs)
