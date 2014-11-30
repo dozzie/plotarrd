@@ -11,55 +11,52 @@
 <h1>Graph details: <i>{{ graph_name }}</i></h1>
 {% endif %}
 
-<table border="1">
-  <tr>
-    <td id="graph_cell">
+<div id="graph_cell">
 {% if image_url == "" %}
-      <b>No image</b>
+  <b>No image</b>
 {% else %}
-      <img src="{{ image_url }}" />
+  <img src="{{ image_url }}" />
 {% endif %}
-      <form action="{{ url_for('plot_save') }}" method="post">
+  <form action="{{ url_for('plot_save') }}" method="post">
 {% for v in values %}
-        <input type="hidden" name="name" value="{{ v.name }}" />
-        <input type="hidden" name="rrd" value="{{ v.rrd }}" />
-        <input type="hidden" name="ds" value="{{ v.ds }}" />
+    <input type="hidden" name="name" value="{{ v.name }}" />
+    <input type="hidden" name="rrd" value="{{ v.rrd }}" />
+    <input type="hidden" name="ds" value="{{ v.ds }}" />
 {% endfor %}
-        <label for="graph_name">graph name</label>
-        <input type="text" id="graph_name" size="20" name="graph_name" value="{{ graph_name }}" />
-        <input type="submit" name="save" value="save" /> |
-        <input type="submit" name="discard" value="discard" />
-      </form>
-    </td>
-    <td id="values">
-      <a href="{{ url_for('browse_files') }}">add new</a>
-      <table border="1">
-        <tr>
-          <th>label</th>
-          <th>file</th>
-          <th>DS</th>
-        </tr>
+    <label for="graph_name">graph name</label>
+    <input type="text" id="graph_name" size="20" name="graph_name" value="{{ graph_name }}" />
+    <input type="submit" name="save" value="save" /> |
+    <input type="submit" name="discard" value="discard" />
+  </form>
+</div>
+
+<div id="values">
+  <a href="{{ url_for('browse_files') }}">add new variable</a>
+  <table id="ds_list">
+    <tr>
+      <th>label</th>
+      <th>file</th>
+      <th>DS</th>
+    </tr>
 {% for v in values %}
-        <tr>
-          <td>
-            <form method="post">
-              <input type="text" size="12" name="name" value="{{ v.name }}" />
-              <button type="submit" name="rename" value="{{ loop.index0 }}">rename</button>
-            </form>
-          </td>
-          <td><tt>{{ v.rrd }}</tt></td>
-          <td><i>{{ v.ds }}</i></td>
-          <td>
-            <form method="post">
-              <button type="submit" name="delete" value="{{ loop.index0 }}">remove</button>
-            </form>
-          </td>
-        </tr>
+    <tr>
+      <td>
+        <form method="post">
+          <input type="text" size="12" name="name" value="{{ v.name }}" />
+          <button type="submit" name="rename" value="{{ loop.index0 }}">rename</button>
+        </form>
+      </td>
+      <td><tt>{{ v.rrd }}</tt></td>
+      <td><i>{{ v.ds }}</i></td>
+      <td>
+        <form method="post">
+          <button type="submit" name="delete" value="{{ loop.index0 }}">remove</button>
+        </form>
+      </td>
+    </tr>
 {% endfor %}
-      </table>
-    </td>
-  </tr>
-</table>
+  </table>
+</div>
 
 </body>
 </html>

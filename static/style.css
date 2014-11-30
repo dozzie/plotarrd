@@ -47,6 +47,18 @@ td form {
   margin: 0px;
 }
 
+table#ds_list, table#ds_list td, table#ds_list th {
+  border: dotted 1px #999a9c;
+}
+
+#graph_cell {
+  text-align: center;
+  display: inline-block;
+}
+#values {
+  text-align: left;
+}
+
 /*--------------------------------------------------------------------------*/
 
 input[type=submit], input[type=button], button {
