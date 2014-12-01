@@ -183,7 +183,7 @@ def plot_set_params():
     # form fields:
     #   * param, value -- getlist()
     #   * delete (str)
-    #   * newparamname, newparamexample, update=add
+    #   * newparamname, newparamdefault, update=add
     #   * update=update
 
     if 'delete' in flask.request.values:
@@ -194,7 +194,7 @@ def plot_set_params():
     elif flask.request.values['update'] == 'add':
         new_vars = dict(flask.session.get('params', {}))
         new_vars[flask.request.values['newparamname']] = \
-            flask.request.values['newparamexample']
+            flask.request.values['newparamdefault']
     else:
         names = flask.request.values.getlist('param')
         values = flask.request.values.getlist('value')
