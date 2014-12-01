@@ -33,7 +33,8 @@ def list_variables(filename):
 
 #-----------------------------------------------------------------------------
 
-def plot(values, rrd_root, width = None, height = None, title = None, timescale = None):
+def plot(values, rrd_root, width = None, height = None, timescale = None,
+         title = None, ylabel = None, ymin = None, ymax = None):
     defs = []
     lines = []
     auto_colour_idx = 0
@@ -74,6 +75,12 @@ def plot(values, rrd_root, width = None, height = None, title = None, timescale 
             '--start', 'now - %s' % (timescale,),
             '--end', 'now - 1',
         ])
+    if ylabel is not None:
+        rrd_commands.extend(['--vertical-label', ylabel])
+    if ymin is not None:
+        rrd_commands.extend(['--lower-limit', str(ymin)])
+    if ymax is not None:
+        rrd_commands.extend(['--upper-limit', str(ymax)])
 
     rrd_commands.extend(defs)
     rrd_commands.extend(lines)

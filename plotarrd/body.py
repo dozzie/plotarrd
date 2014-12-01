@@ -4,6 +4,7 @@ import flask
 import plotarrd.settings
 import os
 import rrd
+import re
 
 import base64
 import json
@@ -12,6 +13,8 @@ import json
 
 app = flask.Flask(__name__)
 app.config.from_object(plotarrd.settings)
+
+_PARAM_RE = re.compile(r'\$\{([a-zA-Z0-9_.-]+)\}')
 
 #-----------------------------------------------------------------------------
 
@@ -37,23 +40,48 @@ def index():
     return flask.render_template('index.html', graphs = saved_graphs)
 
 #-----------------------------------------------------------------------------
+#
+# session:
+#   * 'graph' :: [ {'name': str(), 'rrd': str(), 'ds': str()} ]
+#   * 'params' :: { Name: ExampleValue }
+#   * 'plot_params' :: {
+#       'title':? str(),
+#       'ylabel':? str(),
+#       'ymin':? number(),
+#       'ymax':? number(),
+#       'timespan':? int(),
+#       'timespan_unit': "h" | "d" | "w" | "m"
+#     }
+#
+#-----------------------------------------------------------------------------
 
 @app.route("/plot", methods = ["GET"])
 def plot():
     if 'graph' not in flask.session or len(flask.session['graph']) == 0:
         vals = []
+        plot_params = {}
+        params = flask.session.get('params', {})
         url = ""
     else:
         vals = flask.session['graph']
-        params = {
-            'values': vals,
+        plot_params = flask.session.get('plot_params', {})
+        params = flask.session.get('params', {})
+        url_params = {
+            'graph': vals,
+            'params': params,
+            'plot_params': plot_params,
         }
-        url = flask.url_for('render', params = encode(params))
+        url = flask.url_for('render', params = encode(url_params))
 
-    return flask.render_template('plot.html', image_url = url, values = vals)
+    print "params: %s" % (params,)
+    return flask.render_template('plot.html',
+                                 image_url = url,
+                                 values = vals,
+                                 plot_params = plot_params,
+                                 params = params)
 
 @app.route("/plot", methods = ["POST"])
-def plot_POST():
+def plot_rename_or_delete():
     if 'rename' in flask.request.values:
         entry = int(flask.request.values['rename'])
         if entry < len(flask.session['graph']):
@@ -72,11 +100,131 @@ def plot_POST():
 
 #-----------------------------------------------------------------------------
 
+@app.route("/plot/labels", methods = ["POST"])
+def plot_set_labels():
+    # form fields:
+    #   * title, ylabel, ymin, ymax
+    #   * timespan + timespan_unit
+    #   * update=update
+    new_vars = dict(flask.session.get('plot_params', {}))
+
+    if flask.request.values.get('title', '') != '':
+        new_vars['title'] = flask.request.values['title']
+    elif 'title' in new_vars:
+        del new_vars['title']
+    if flask.request.values.get('ylabel', '') != '':
+        new_vars['ylabel'] = flask.request.values['ylabel']
+    elif 'ylabel' in new_vars:
+        del new_vars['ylabel']
+
+    def number(s):
+        if '.' in s or 'e' in s or 'E' in s:
+            return float(s)
+        else:
+            return int(s)
+    if flask.request.values.get('ymin', '') != '':
+        new_vars['ymin'] = number(flask.request.values['ymin'])
+    elif 'ymin' in new_vars:
+        del new_vars['ymin']
+    if flask.request.values.get('ymax', '') != '':
+        new_vars['ymax'] = number(flask.request.values['ymax'])
+    elif 'ymax' in new_vars:
+        del new_vars['ymax']
+
+    if flask.request.values.get('timespan_unit', '') in ['h', 'd', 'w', 'm']:
+        new_vars['timespan_unit'] = flask.request.values['timespan_unit']
+    if flask.request.values.get('timespan', '') != '':
+        new_vars['timespan'] = int(flask.request.values['timespan'])
+    else:
+        if 'timespan' in new_vars:
+            del new_vars['timespan']
+        if 'timespan_unit' in new_vars:
+            del new_vars['timespan_unit']
+
+    flask.session['plot_params'] = new_vars
+    return flask.redirect(flask.url_for('plot'))
+
+@app.route("/plot/variables", methods = ["POST"])
+def plot_set_variables():
+    # form fields:
+    #   * name, rrd, ds -- getlist()
+    #   * delete (int)
+    #   * newvarname, newvarexpr, newvards, update=add
+    #   * update=update
+
+    if 'delete' in flask.request.values:
+        new_vars = list(flask.session.get('graph', []))
+        entry = int(flask.request.values['delete'])
+        if entry < len(new_vars):
+            del new_vars[entry]
+    elif flask.request.values['update'] == 'add':
+        new_vars = list(flask.session.get('graph', []))
+        # TODO: expressions
+        new_vars.append({
+            'name': flask.request.values['newvarname'],
+            'rrd':  flask.request.values['newvarexpr'],
+            'ds':   flask.request.values['newvards'],
+        })
+    else:
+        names = flask.request.values.getlist('name')
+        rrds = flask.request.values.getlist('rrd')
+        dses = flask.request.values.getlist('ds')
+        new_vars = [
+            {"rrd": rrds[i], "ds": dses[i], "name": names[i]}
+            for i in range(len(rrds))
+        ]
+
+    flask.session['graph'] = new_vars
+
+    return flask.redirect(flask.url_for('plot'))
+
+@app.route("/plot/params", methods = ["POST"])
+def plot_set_params():
+    # form fields:
+    #   * param, value -- getlist()
+    #   * delete (str)
+    #   * newparamname, newparamexample, update=add
+    #   * update=update
+
+    if 'delete' in flask.request.values:
+        new_vars = dict(flask.session.get('params', {}))
+        entry = flask.request.values['delete']
+        if entry in new_vars:
+            del new_vars[entry]
+    elif flask.request.values['update'] == 'add':
+        new_vars = dict(flask.session.get('params', {}))
+        new_vars[flask.request.values['newparamname']] = \
+            flask.request.values['newparamexample']
+    else:
+        names = flask.request.values.getlist('param')
+        values = flask.request.values.getlist('value')
+        new_vars = dict(zip(names, values))
+
+    flask.session['params'] = new_vars
+
+    return flask.redirect(flask.url_for('plot'))
+
+#-----------------------------------------------------------------------------
+
 @app.route("/render/<params>")
 def render(params):
     params = decode(params)
     # TODO: sanity checks on params
-    img = rrd.plot(values = params['values'], rrd_root = app.config['RRD_PATH'])
+    values, graph_params = combine_params(params['graph'],
+                                          params.get('plot_params', {}),
+                                          params.get('params', {}))
+    if 'timespan' in graph_params and 'timespan_unit' in graph_params:
+        timescale = "%d%s" % (graph_params['timespan'],
+                              graph_params['timespan_unit'])
+    else:
+        timescale = None
+    img = rrd.plot(values = values,
+                   rrd_root = app.config['RRD_PATH'],
+                   title = graph_params.get('title'),
+                   ylabel = graph_params.get('ylabel'),
+                   ymin = graph_params.get('ymin'),
+                   ymax = graph_params.get('ymax'),
+                   timescale = timescale)
     return flask.Response(response = img, content_type = 'image/png')
 
 @app.route("/graph/<name>", methods = ["GET"])
@@ -90,7 +238,9 @@ def graph(name):
         return flask.render_template('plot.html',
                                      graph_name = name,
                                      image_url = url,
-                                     values = params['values'])
+                                     values = params['graph'],
+                                     plot_params = params['plot_params'],
+                                     params = params['params'])
     except IOError:
         flask.abort(404)
 
@@ -106,7 +256,7 @@ def graph_POST(name):
         flask.abort(404)
 
     # load the session
-    flask.session['graph'] = params['values']
+    flask.session['graph'] = params['graph']
 
     # do the POST thing
     if 'rename' in flask.request.values:
@@ -139,19 +289,37 @@ def render_saved(name):
         params_path = os.path.join(app.config['SAVED_GRAPHS_ABS'],
                                    name + '.json')
         params = json.load(open(params_path))
-        img = rrd.plot(values = params['values'],
+        params_updated = params.get('params', {})
+        params_updated.update(flask.request.args.items())
+        values, graph_params = combine_params(params['graph'],
+                                              params.get('plot_params', {}),
+                                              params_updated)
+        if timescale is None and \
+           'timespan' in graph_params and 'timespan_unit' in graph_params:
+            timescale = "%d%s" % (graph_params['timespan'],
+                                  graph_params['timespan_unit'])
+
+        img = rrd.plot(values = values,
                        rrd_root = app.config['RRD_PATH'],
-                       width = width, height = height, timescale = timescale)
+                       title = graph_params.get('title'),
+                       ylabel = graph_params.get('ylabel'),
+                       ymin = graph_params.get('ymin'),
+                       ymax = graph_params.get('ymax'),
+                       width = width, height = height,
+                       timescale = timescale)
         return flask.Response(response = img, content_type = 'image/png')
     except IOError:
         flask.abort(404)
+    except KeyError:
+        flask.abort(500)
 
 #-----------------------------------------------------------------------------
 
 @app.route("/edit/new")
 def start_anew():
-    if 'graph' in flask.session:
-        del flask.session['graph']
+    for s in ['graph', 'params', 'plot_params']:
+        if s in flask.session:
+            del flask.session[s]
     return flask.redirect(flask.url_for('plot'))
 
 #-----------------------------------------------------------------------------
@@ -164,8 +332,9 @@ def plot_save():
     #     and "ds")
 
     if 'discard' in flask.request.values:
-        if 'graph' in flask.session:
-            del flask.session['graph']
+        for s in ['graph', 'params', 'plot_params']:
+            if s in flask.session:
+                del flask.session[s]
         return flask.redirect(flask.url_for('plot'))
     elif 'delete' in flask.request.values:
         # TODO: sanitize the graph name
@@ -188,7 +357,9 @@ def plot_save():
     ]
 
     params = {
-        'values': values,
+        'graph': values,
+        'params': flask.session.get('params', {}),
+        'plot_params': flask.session.get('plot_params', {}),
     }
     params_path = os.path.join(app.config['SAVED_GRAPHS_ABS'],
                                graph_name + ".json")
@@ -250,6 +421,29 @@ def browse_datasources_POST():
 
     flask.session['graph'] = graph_datasources(prev_dses, filename, new_dses)
     return flask.redirect(flask.url_for('plot'))
+
+#-----------------------------------------------------------------------------
+
+def combine_params(graph_def, graph_params, params):
+    def fill(s):
+        if not isinstance(s, (str, unicode)):
+            return s
+        fields = _PARAM_RE.split(s)
+        for i in range(1, len(fields), 2):
+            fields[i] = params.get(fields[i], '')
+        return ''.join(fields)
+
+    graph_def = [
+        {n: fill(d[n]) for n in ['name', 'rrd', 'ds']}
+        for d in graph_def
+    ]
+    graph_params = {
+        k: fill(graph_params[k])
+        for k in graph_params
+    }
+
+    # TODO: fill me
+    return (graph_def, graph_params)
 
 #-----------------------------------------------------------------------------
 

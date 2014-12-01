@@ -43,20 +43,43 @@ pre {
 
 /*--------------------------------------------------------------------------*/
 
-td form {
-  margin: 0px;
+table.list {
+  width: 100%;
+}
+table.list, table.list td, table.list th {
+  border: dotted 1px #999a9c;
 }
 
-table#ds_list, table#ds_list td, table#ds_list th {
-  border: dotted 1px #999a9c;
+form {
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+input.number {
+  text-align: right;
+}
+input.cell, button.cell {
+  width: 100%;
+}
+
+div.block > div {
+  display: inline-block;
+  vertical-align: top;
 }
 
 #graph_cell {
   text-align: center;
-  display: inline-block;
+  margin-bottom: 16px;
+}
+#labels {
+  text-align: left;
 }
 #values {
   text-align: left;
+  width: 69%;
+}
+#params {
+  text-align: left;
+  width: 30%;
 }
 
 /*--------------------------------------------------------------------------*/
@@ -65,7 +88,7 @@ input[type=submit], input[type=button], button {
   border: 1px solid #999a9c;
   background: #bfc2c6;
 }
-input[type=text], textarea {
+input[type=text], textarea, select {
   border: 1px solid #999a9c;
   background: #eee;
 }

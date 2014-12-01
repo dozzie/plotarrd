@@ -1,7 +1,8 @@
 <html>
 <head>
 <title>plotarrd</title>
-<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+<link rel="stylesheet" type="text/css"
+  href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
@@ -11,56 +12,175 @@
 <h1>Graph details: <i>{{ graph_name }}</i></h1>
 {% endif %}
 
-<div id="graph_cell">
-{% if image_url == "" %}
-  <b>No image</b>
+<div class="block">
+  <div id="graph_cell">
+{% if not image_url %}
+    <b>No image</b>
 {% else %}
-  <img src="{{ image_url }}" />
+    <img src="{{ image_url }}" />
 {% endif %}
-  <form action="{{ url_for('plot_save') }}" method="post">
+    <form id="save-form" action="{{ url_for('plot_save') }}" method="post">
 {% for v in values %}
-    <input type="hidden" name="name" value="{{ v.name }}" />
-    <input type="hidden" name="rrd" value="{{ v.rrd }}" />
-    <input type="hidden" name="ds" value="{{ v.ds }}" />
+      <input type="hidden" name="name" value="{{ v.name }}" />
+      <input type="hidden" name="rrd" value="{{ v.rrd }}" />
+      <input type="hidden" name="ds" value="{{ v.ds }}" />
 {% endfor %}
-    <label for="graph_name">graph name</label>
-    <input type="text" id="graph_name" size="20" name="graph_name" value="{{ graph_name }}" />
-    <input type="submit" name="save" value="save" /> |
+      <label for="graph_name">graph name</label>
+      <input type="text" id="graph_name" size="20" name="graph_name"
+        value="{{ graph_name }}" />
+      <input type="submit" name="save" value="save" /> |
 {% if not graph_name %}
-    <input type="submit" name="discard" value="discard" />
+      <input type="submit" name="discard" value="discard" />
 {% else %}
-    <button type="submit" name="delete" value="{{ graph_name }}">delete</button>
+      <button type="submit" name="delete"
+        value="{{ graph_name }}">delete</button>
 {% endif %}
-  </form>
+    </form>
+  </div>
+
+{% if image_url %}
+  <div id="labels">
+    <form id="labels-form" action="{{ url_for('plot_set_labels') }}" method="post">
+      <table>
+        <tr>
+          <td><label for="title">title</label></td>
+          <td><input type="text" size="24" id="title" name="title" value="{{ plot_params.title }}" /></td>
+        </tr>
+        <tr>
+          <td><label for="ylabel">Y label</label></td>
+          <td><input type="text" size="24" id="ylabel" name="ylabel" value="{{ plot_params.ylabel }}" /></td>
+        </tr>
+        <tr>
+          <td><label>Y range</label></td>
+          <td>
+            <label for="ymin">min:</label>
+            <input type="text" class="number" size="5" id="ymin" name="ymin" value="{{ plot_params.ymin }}" />
+            <label for="ymax">max:</label>
+            <input type="text" class="number" size="5" id="ymax" name="ymax" value="{{ plot_params.ymax }}" />
+          </td>
+        </tr>
+        <tr>
+          <td><label for="timespan">time span</label></td>
+          <td>
+            <input type="text" class="number" size="5"
+              id="timespan" name="timespan" value="{{ plot_params.timespan }}" />
+            <select name="timespan_unit">
+              <option value="h"
+                {% if plot_params.timespan_unit == "h" %} selected="true"{% endif %}>hours</option>
+              <option value="d"
+                {% if plot_params.timespan_unit not in ["h", "w", "m"] %} selected="true"{% endif %}>days</option>
+              <option value="w"
+                {% if plot_params.timespan_unit == "w" %} selected="true"{% endif %}>weeks</option>
+              <option value="m"
+                {% if plot_params.timespan_unit == "m" %} selected="true"{% endif %}>months</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <th></th>
+          <th><input type="submit" name="update" value="update" /></th>
+        </tr>
+      </table>
+    </form>
+  </div>
+{% endif %}
 </div>
 
-<div id="values">
-  <a href="{{ url_for('browse_files') }}">add new variable</a> |
-  <a href="{{ url_for('start_anew') }}">start anew</a>
-  <table id="ds_list">
-    <tr>
-      <th>label</th>
-      <th>file</th>
-      <th>DS</th>
-    </tr>
+<div class="block">
+  <div id="values">
+    <a href="{{ url_for('browse_files') }}">browse RRD files</a> |
+    <a href="{{ url_for('start_anew') }}">start anew</a>
+
+    <form id="variables-form" action="{{ url_for('plot_set_variables') }}" method="post">
+      <table class="list">
+        <tr>
+          <th style="width: 15%">label</th>
+          <th style="width: auto">file</th>
+          <th style="width: 10%">DS</th>
+          <th style="width: 10%"></th>
+        </tr>
 {% for v in values %}
-    <tr>
-      <td>
-        <form method="post">
-          <input type="text" size="12" name="name" value="{{ v.name }}" />
-          <button type="submit" name="rename" value="{{ loop.index0 }}">rename</button>
-        </form>
-      </td>
-      <td><tt>{{ v.rrd }}</tt></td>
-      <td><i>{{ v.ds }}</i></td>
-      <td>
-        <form method="post">
-          <button type="submit" name="delete" value="{{ loop.index0 }}">remove</button>
-        </form>
-      </td>
-    </tr>
+        <tr>
+          <td>
+            <input type="text" class="cell"
+              name="name" value="{{ v.name }}" />
+          </td>
+          <td>
+            <input type="text" class="cell"
+              name="rrd" value="{{ v.rrd }}" />
+          </td>
+          <td>
+            <input type="text" class="cell"
+              name="ds" value="{{ v.ds }}" />
+          </td>
+          <td>
+            <button type="submit" class="cell"
+              name="delete" value="{{ loop.index0 }}">remove</button>
+          </td>
+        </tr>
 {% endfor %}
-  </table>
+        <tr>
+          <td><input type="text" class="cell" name="newvarname" /></td>
+          <td><input type="text" class="cell" name="newvarexpr" /></td>
+          <td><input type="text" class="cell" name="newvards" /></td>
+          <td>
+            <input type="submit" class="cell" name="update" value="add" />
+          </td>
+        </tr>
+        <tr>
+          <th colspan="4">
+            <input type="submit" name="update" value="update" />
+          </th>
+        </tr>
+      </table>
+    </form>
+  </div>
+
+  <div id="params">
+    graph parameters:
+
+    <form id="params-form" action="{{ url_for('plot_set_params') }}" method="post">
+      <table class="list">
+        <tr>
+          <th style="width: 25%">name</th>
+          <th style="width: auto">example value</th>
+          <th style="width: 15%"></th>
+        </tr>
+{% for (n,v) in params|dictsort %}
+        <tr>
+          <td>
+            <input type="text" class="cell"
+              name="param" value="{{ n }}" />
+          </td>
+          <td>
+            <input type="text" class="cell"
+              name="value" value="{{ v }}" />
+          </td>
+          <td>
+            <button type="submit" class="cell"
+              name="delete" value="{{ n }}">remove</button>
+          </td>
+        </tr>
+{% endfor %}
+        <tr>
+          <td>
+            <input type="text" class="cell" name="newparamname" />
+          </td>
+          <td>
+            <input type="text" class="cell" name="newparamexample" />
+          </td>
+          <td>
+            <input type="submit" class="cell" name="update" value="add" />
+          </td>
+        </tr>
+        <tr>
+          <th colspan="4">
+            <input type="submit" name="update" value="update" />
+          </th>
+        </tr>
+      </table>
+    </form>
+  </div>
 </div>
 
 </body>
