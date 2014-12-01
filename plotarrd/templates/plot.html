@@ -92,6 +92,7 @@
     <a href="{{ url_for('start_anew') }}">start anew</a>
 
     <form id="variables-form" action="{{ url_for('plot_set_variables') }}" method="post">
+      <input type="submit" class="hidden" name="update" value="update" />
       <table class="list">
         <tr>
           <th style="width: 15%">label</th>
@@ -140,6 +141,7 @@
     graph parameters:
 
     <form id="params-form" action="{{ url_for('plot_set_params') }}" method="post">
+      <input type="submit" class="hidden" name="update" value="update" />
       <table class="list">
         <tr>
           <th style="width: 25%">name</th>
