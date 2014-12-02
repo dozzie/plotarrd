@@ -94,7 +94,8 @@ def plot_set_variables():
         plot_def.del_def(entry)
     elif flask.request.values['update'] == 'add':
         # TODO: expressions
-        # TODO: sanitize newvarexpr field
+        if not path_ok(flask.request.values['newvarexpr']):
+            flask.abort(500)
         plot_def.add_def(
             name = flask.request.values['newvarname'],
             rrd  = flask.request.values['newvarexpr'],
@@ -102,12 +103,14 @@ def plot_set_variables():
         )
     else:
         # TODO: expressions
-        # TODO: sanitize newvarexpr field
         names = flask.request.values.getlist('name')
         rrds = flask.request.values.getlist('rrd')
         dses = flask.request.values.getlist('ds')
+        def path_filter(path):
+            if not path_ok(path): flask.abort(500)
+            return path
         plot_def.set_defs([
-            {"rrd": rrds[i], "ds": dses[i], "name": names[i]}
+            {"rrd": path_filter(rrds[i]), "ds": dses[i], "name": names[i]}
             for i in range(len(rrds))
         ])
 
@@ -148,6 +151,9 @@ def plot_set_params():
 def render(params):
     plot_def = PlotParams(b64 = params)
     values, opts = plot_def.get_rrdplot_args()
+    # sanity check on RRD paths
+    if not defs_ok(values):
+        flask.abort(500)
 
     img = rrd.plot(values = values, rrd_root = app.config['RRD_PATH'],
                    **opts)
@@ -155,8 +161,10 @@ def render(params):
 
 @app.route("/graph/<name>", methods = ["GET"])
 def graph(name):
+    if not path_ok(name): # `name' is still a path (though it can't have "/")
+        flask.abort(500)
+
     try:
-        # TODO: sanity checks on name
         params_path = os.path.join(app.config['SAVED_GRAPHS_ABS'],
                                    name + '.json')
         plot_def = PlotParams(filename = params_path)
@@ -175,6 +183,9 @@ def graph(name):
 # {Time} can be "15min", "8h", "1d", "4w", "1month", "1y" and so on
 @app.route("/graph/<name>.png")
 def render_saved(name):
+    if not path_ok(name): # `name' is still a path (though it can't have "/")
+        flask.abort(500)
+
     if 'size' in flask.request.args:
         width, height = flask.request.args['size'].split('x')
         width = int(width)
@@ -185,7 +196,6 @@ def render_saved(name):
     timespan = flask.request.args.get('timespan')
 
     try:
-        # TODO: sanity checks on name
         params_path = os.path.join(app.config['SAVED_GRAPHS_ABS'],
                                    name + '.json')
         plot_def = PlotParams(filename = params_path)
@@ -196,6 +206,10 @@ def render_saved(name):
             plot_def.add_param(name, value)
 
         values, opts = plot_def.get_rrdplot_args(timespan = timespan)
+        # sanity check on RRD paths
+        # XXX: after propagating all the parameters, defaults and from GET
+        if not defs_ok(values):
+            flask.abort(500)
 
         img = rrd.plot(values = values, rrd_root = app.config['RRD_PATH'],
                        width = width, height = height, **opts)
@@ -228,8 +242,9 @@ def plot_save():
         plot_def.session_unset()
         return flask.redirect(flask.url_for('plot'))
     elif 'delete' in flask.request.values:
-        # TODO: sanitize the graph name
         graph_name = flask.request.values['delete']
+        if not path_ok(graph_name):
+            flask.abort(500)
         params_path = os.path.join(app.config['SAVED_GRAPHS_ABS'],
                                    graph_name + ".json")
         try:
@@ -246,8 +261,16 @@ def plot_save():
 
     # TODO: sanity checks (graph_name =~ /^[a-zA-Z0-9_]+$/, list lengths equal
     # and >0, paths in rrds, names distinct and appropriate, ...)
+    if not re.match(r'^[a-zA-Z0-9_]+$', graph_name):
+        flask.abort(500) # invalid graph name
+
+    # NOTE: checking DEFs now is not that necessary, since plotting saved
+    # graph still needs to check paths
+    def path_filter(path):
+        if not path_ok(path): flask.abort(500)
+        return path
     plot_def.set_defs([
-        {"rrd": rrds[i], "ds": dses[i], "name": names[i]}
+        {"rrd": path_filter(rrds[i]), "ds": dses[i], "name": names[i]}
         for i in range(len(rrds))
     ])
 
@@ -263,8 +286,9 @@ def plot_save():
 @app.route("/edit/browse")
 def browse_files():
     if 'dir' in flask.request.values:
-        # TODO: sanity check (leading slash, "..")
         dirname = flask.request.values['dir'].strip('/')
+        if not path_ok(dirname):
+            flask.abort(500)
         dirname_abs = os.path.join(app.config['RRD_PATH'], dirname)
     else:
         dirname = ''
@@ -294,8 +318,9 @@ def browse_datasources():
     if 'file' not in flask.request.values:
         return flask.redirect(flask.url_for('browse_files'))
 
-    # TODO: sanity check (leading slash, "..")
     filename = flask.request.values['file'].strip('/')
+    if not path_ok(filename):
+        flask.abort(500)
     filename_abs = os.path.join(app.config['RRD_PATH'], filename)
     datasources = rrd.list_variables(filename_abs)
 
@@ -306,8 +331,9 @@ def browse_datasources():
 def browse_datasources_finish():
     plot_def = PlotParams(session = flask.session)
 
-    # TODO: sanity check (leading slash, "..")
     rrd = flask.request.values['file'].strip('/')
+    if not path_ok(rrd):
+        flask.abort(500)
     for ds in flask.request.values.getlist('datasource'):
         plot_def.add_def(name = ds, rrd = rrd, ds = ds)
 
@@ -317,6 +343,17 @@ def browse_datasources_finish():
 
 #-----------------------------------------------------------------------------
 # utilities
+#-----------------------------------------------------------------------------
+
+def defs_ok(rrd_defs):
+    for e in rrd_defs:
+        if not path_ok(e['rrd']):
+            return False
+    return True
+
+def path_ok(path):
+    return not(path.startswith("/") or '..' in path.split('/'))
+
 #-----------------------------------------------------------------------------
 
 class PlotParams:
