@@ -95,7 +95,7 @@ def plot_set_variables():
     elif flask.request.values['update'] == 'add':
         # TODO: expressions
         if not path_ok(flask.request.values['newvarexpr']):
-            flask.abort(400)
+            flask.abort(403)
         plot_def.add_def(
             name = flask.request.values['newvarname'],
             rrd  = flask.request.values['newvarexpr'],
@@ -107,7 +107,7 @@ def plot_set_variables():
         rrds = flask.request.values.getlist('rrd')
         dses = flask.request.values.getlist('ds')
         def path_filter(path):
-            if not path_ok(path): flask.abort(400)
+            if not path_ok(path): flask.abort(403)
             return path
         plot_def.set_defs([
             {"rrd": path_filter(rrds[i]), "ds": dses[i], "name": names[i]}
@@ -153,7 +153,7 @@ def render(params):
     values, opts = plot_def.get_rrdplot_args()
     # sanity check on RRD paths
     if not defs_ok(values):
-        flask.abort(400)
+        flask.abort(403)
 
     img = rrd.plot(values = values, rrd_root = app.config['RRD_PATH'],
                    **opts)
@@ -162,7 +162,7 @@ def render(params):
 @app.route("/graph/<name>", methods = ["GET"])
 def graph(name):
     if not path_ok(name): # `name' is still a path (though it can't have "/")
-        flask.abort(400)
+        flask.abort(403)
 
     try:
         params_path = os.path.join(app.config['SAVED_GRAPHS_ABS'],
@@ -184,7 +184,7 @@ def graph(name):
 @app.route("/graph/<name>.png")
 def render_saved(name):
     if not path_ok(name): # `name' is still a path (though it can't have "/")
-        flask.abort(400)
+        flask.abort(403)
 
     if 'size' in flask.request.args:
         width, height = flask.request.args['size'].split('x')
@@ -209,7 +209,7 @@ def render_saved(name):
         # sanity check on RRD paths
         # XXX: after propagating all the parameters, defaults and from GET
         if not defs_ok(values):
-            flask.abort(400)
+            flask.abort(403)
 
         img = rrd.plot(values = values, rrd_root = app.config['RRD_PATH'],
                        width = width, height = height, **opts)
@@ -244,7 +244,7 @@ def plot_save():
     elif 'delete' in flask.request.values:
         graph_name = flask.request.values['delete']
         if not path_ok(graph_name):
-            flask.abort(400)
+            flask.abort(403)
         params_path = os.path.join(app.config['SAVED_GRAPHS_ABS'],
                                    graph_name + ".json")
         try:
@@ -262,12 +262,12 @@ def plot_save():
     # TODO: sanity checks (graph_name =~ /^[a-zA-Z0-9_]+$/, list lengths equal
     # and >0, paths in rrds, names distinct and appropriate, ...)
     if not re.match(r'^[a-zA-Z0-9_]+$', graph_name):
-        flask.abort(400) # invalid graph name
+        flask.abort(403) # invalid graph name
 
     # NOTE: checking DEFs now is not that necessary, since plotting saved
     # graph still needs to check paths
     def path_filter(path):
-        if not path_ok(path): flask.abort(400)
+        if not path_ok(path): flask.abort(403)
         return path
     plot_def.set_defs([
         {"rrd": path_filter(rrds[i]), "ds": dses[i], "name": names[i]}
@@ -288,7 +288,7 @@ def browse_files():
     if 'dir' in flask.request.values:
         dirname = flask.request.values['dir'].strip('/')
         if not path_ok(dirname):
-            flask.abort(400)
+            flask.abort(403)
         dirname_abs = os.path.join(app.config['RRD_PATH'], dirname)
     else:
         dirname = ''
@@ -320,7 +320,7 @@ def browse_datasources():
 
     filename = flask.request.values['file'].strip('/')
     if not path_ok(filename):
-        flask.abort(400)
+        flask.abort(403)
     filename_abs = os.path.join(app.config['RRD_PATH'], filename)
     datasources = rrd.list_variables(filename_abs)
 
@@ -333,7 +333,7 @@ def browse_datasources_finish():
 
     rrd = flask.request.values['file'].strip('/')
     if not path_ok(rrd):
-        flask.abort(400)
+        flask.abort(403)
     for ds in flask.request.values.getlist('datasource'):
         plot_def.add_def(name = ds, rrd = rrd, ds = ds)
 
