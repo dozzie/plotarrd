@@ -491,7 +491,10 @@ class PlotParams:
             result['ymax'] = self._ymax
         if self._timespan is not None and self._timespan_unit is not None:
             result['timespan']      = self._timespan
-            result['timespan_unit'] = self._timespan_unit
+            if self._timespan_unit == 'm':
+                result['timespan_unit'] = 'month'
+            else:
+                result['timespan_unit'] = self._timespan_unit
         return result
 
     def add_def(self, name, rrd, ds):
