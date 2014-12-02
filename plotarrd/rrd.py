@@ -88,8 +88,16 @@ def plot(values, rrd_root, width = None, height = None, timespan = None,
     for i in range(len(rrd_commands)):
         rrd_commands[i] = str(rrd_commands[i])
 
-    result = rrdtool.graphv(*rrd_commands)
-    return result['image']
+    try:
+        result = rrdtool.graphv(*rrd_commands)
+        return result['image']
+    except rrdtool.error, e:
+        # XXX: pity I have to discriminate errors this way, but rrdtool
+        # provides no other way
+        if e.args[0].startswith('opening'):
+            raise IOError(e)
+        else:
+            raise ValueError(e)
 
 #-----------------------------------------------------------------------------
 # vim:ft=python:foldmethod=marker

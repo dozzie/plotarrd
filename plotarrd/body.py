@@ -155,9 +155,14 @@ def render(params):
     if not defs_ok(values):
         flask.abort(403)
 
-    img = rrd.plot(values = values, rrd_root = app.config['RRD_PATH'],
-                   **opts)
-    return flask.Response(response = img, content_type = 'image/png')
+    try:
+        img = rrd.plot(values = values, rrd_root = app.config['RRD_PATH'],
+                       **opts)
+        return flask.Response(response = img, content_type = 'image/png')
+    except IOError:
+        flask.abort(404) # RRD cannot be read
+    except ValueError:
+        flask.abort(400) # rrd.plot() rejected parameters
 
 @app.route("/graph/<name>", methods = ["GET"])
 def graph(name):
@@ -215,9 +220,9 @@ def render_saved(name):
                        width = width, height = height, **opts)
         return flask.Response(response = img, content_type = 'image/png')
     except IOError:
-        flask.abort(404)
-    except KeyError:
-        flask.abort(400)
+        flask.abort(404) # JSON file or RRD cannot be read
+    except ValueError:
+        flask.abort(400) # rrd.plot() rejected parameters
 
 #-----------------------------------------------------------------------------
 
