@@ -18,17 +18,6 @@ _PARAM_RE = re.compile(r'\$\{([a-zA-Z0-9_.-]+)\}')
 
 #-----------------------------------------------------------------------------
 
-def encode(data):
-    return base64.b64encode(json.dumps(data))
-
-def decode(data):
-    try:
-        return json.loads(base64.b64decode(data))
-    except:
-        flask.abort(400)
-
-#-----------------------------------------------------------------------------
-
 @app.route("/")
 def index():
     saved_graphs = [
@@ -73,7 +62,6 @@ def plot():
         }
         url = flask.url_for('render', params = encode(url_params))
 
-    print "params: %s" % (params,)
     return flask.render_template('plot.html',
                                  image_url = url,
                                  values = vals,
@@ -214,17 +202,17 @@ def render(params):
                                           params.get('plot_params', {}),
                                           params.get('params', {}))
     if 'timespan' in graph_params and 'timespan_unit' in graph_params:
-        timescale = "%d%s" % (graph_params['timespan'],
-                              graph_params['timespan_unit'])
+        timespan = "%d%s" % (graph_params['timespan'],
+                             graph_params['timespan_unit'])
     else:
-        timescale = None
+        timespan = None
     img = rrd.plot(values = values,
                    rrd_root = app.config['RRD_PATH'],
                    title = graph_params.get('title'),
                    ylabel = graph_params.get('ylabel'),
                    ymin = graph_params.get('ymin'),
                    ymax = graph_params.get('ymax'),
-                   timescale = timescale)
+                   timespan = timespan)
     return flask.Response(response = img, content_type = 'image/png')
 
 @app.route("/graph/<name>", methods = ["GET"])
@@ -245,7 +233,7 @@ def graph(name):
         flask.abort(404)
 
 @app.route("/graph/<name>", methods = ["POST"])
-def graph_POST(name):
+def graph_rename_or_delete(name):
     # either "rename" or "delete" button for a variable
 
     # TODO: sanity checks on name
@@ -282,7 +270,7 @@ def render_saved(name):
     else:
         width = None
         height = None
-    timescale = flask.request.args.get('timescale')
+    timespan = flask.request.args.get('timespan')
 
     try:
         # TODO: sanity checks on name
@@ -294,10 +282,10 @@ def render_saved(name):
         values, graph_params = combine_params(params['graph'],
                                               params.get('plot_params', {}),
                                               params_updated)
-        if timescale is None and \
+        if timespan is None and \
            'timespan' in graph_params and 'timespan_unit' in graph_params:
-            timescale = "%d%s" % (graph_params['timespan'],
-                                  graph_params['timespan_unit'])
+            timespan = "%d%s" % (graph_params['timespan'],
+                                 graph_params['timespan_unit'])
 
         img = rrd.plot(values = values,
                        rrd_root = app.config['RRD_PATH'],
@@ -306,7 +294,7 @@ def render_saved(name):
                        ymin = graph_params.get('ymin'),
                        ymax = graph_params.get('ymax'),
                        width = width, height = height,
-                       timescale = timescale)
+                       timespan = timespan)
         return flask.Response(response = img, content_type = 'image/png')
     except IOError:
         flask.abort(404)
@@ -413,7 +401,7 @@ def browse_datasources():
                                  file = filename, datasources = datasources)
 
 @app.route("/edit/datasources", methods = ["POST"])
-def browse_datasources_POST():
+def browse_datasources_finish():
     prev_dses = flask.session.get('graph', [])
     # TODO: sanity check (leading slash, "..")
     filename = flask.request.values['file'].strip('/')
@@ -421,6 +409,17 @@ def browse_datasources_POST():
 
     flask.session['graph'] = graph_datasources(prev_dses, filename, new_dses)
     return flask.redirect(flask.url_for('plot'))
+
+#-----------------------------------------------------------------------------
+
+def encode(data):
+    return base64.b64encode(json.dumps(data))
+
+def decode(data):
+    try:
+        return json.loads(base64.b64decode(data))
+    except:
+        flask.abort(400)
 
 #-----------------------------------------------------------------------------
 

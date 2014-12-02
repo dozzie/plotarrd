@@ -33,7 +33,7 @@ def list_variables(filename):
 
 #-----------------------------------------------------------------------------
 
-def plot(values, rrd_root, width = None, height = None, timescale = None,
+def plot(values, rrd_root, width = None, height = None, timespan = None,
          title = None, ylabel = None, ymin = None, ymax = None):
     defs = []
     lines = []
@@ -70,9 +70,9 @@ def plot(values, rrd_root, width = None, height = None, timescale = None,
         ])
     if title is not None:
         rrd_commands.extend(['--title', str(title)])
-    if timescale is not None:
+    if timespan is not None:
         rrd_commands.extend([
-            '--start', 'now - %s' % (timescale,),
+            '--start', 'now - %s' % (timespan,),
             '--end', 'now - 1',
         ])
     if ylabel is not None:
