@@ -71,7 +71,8 @@ Installation
 ------------
 
 Simple WSGI application, requiring Python bindings for RRDtool and
-[Flask](http://flask.pocoo.org/) (0.8+; older versions were not checked).
+[Flask](http://flask.pocoo.org/) (0.6+; older versions were not checked).
+Python 2.6 or newer (it possibly works under 2.5, but this was not checked).
 
 **TODO**: be more verbose.
 
