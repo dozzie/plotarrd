@@ -450,7 +450,7 @@ class PlotParams:
             timespan = "%d%s" % (self._timespan, self._timespan_unit)
 
         values = [
-            {n: fill(d[n]) for n in ['name', 'rrd', 'ds']}
+            {'name': fill(d['name']),'rrd': fill(d['rrd']),'ds': fill(d['ds'])}
             for d in self._graph_def
         ]
         opts = {
