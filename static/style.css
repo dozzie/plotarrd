@@ -41,10 +41,6 @@ pre {
   padding: 1em;
 }
 
-.hidden {
-  display: none;
-}
-
 /*--------------------------------------------------------------------------*/
 
 table.list {
@@ -95,6 +91,15 @@ input[type=submit], input[type=button], button {
 input[type=text], textarea, select {
   border: 1px solid #999a9c;
   background: #eee;
+}
+
+input.hidden {
+  width: 0px;
+  height: 0px;
+  margin: 0px;
+  padding: 0px;
+  outline: none;
+  border: 0px;
 }
 
 /*--------------------------------------------------------------------------*/
