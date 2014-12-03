@@ -400,13 +400,13 @@ class PlotParams:
             self._graph_def = session['graph']
         if session.get('params') is not None:
             self._params = session['params']
-        if session.get('plot_params') is not None:
-            self._title         = session['plot_params'].get('title')
-            self._ylabel        = session['plot_params'].get('ylabel')
-            self._ymin          = session['plot_params'].get('ymin')
-            self._ymax          = session['plot_params'].get('ymax')
-            self._timespan      = session['plot_params'].get('timespan')
-            self._timespan_unit = session['plot_params'].get('timespan_unit')
+        if session.get('plot_opts') is not None:
+            self._title         = session['plot_opts'].get('title')
+            self._ylabel        = session['plot_opts'].get('ylabel')
+            self._ymin          = session['plot_opts'].get('ymin')
+            self._ymax          = session['plot_opts'].get('ymax')
+            self._timespan      = session['plot_opts'].get('timespan')
+            self._timespan_unit = session['plot_opts'].get('timespan_unit')
 
     def __len__(self):
         return len(self._graph_def)
@@ -415,7 +415,7 @@ class PlotParams:
         return {
             'graph': self._graph_def,
             'params': self._params,
-            'plot_params': self.get_plot_opts(),
+            'plot_opts': self.get_plot_opts(),
         }
 
     # return JSON/Base64 serialized parameters (for /render/<stuff> URL)
@@ -428,13 +428,13 @@ class PlotParams:
             del self._session['graph']
         if 'params' in self._session:
             del self._session['params']
-        if 'plot_params' in self._session:
-            del self._session['plot_params']
+        if 'plot_opts' in self._session:
+            del self._session['plot_opts']
 
     def session_save(self):
         self._session['graph'] = self.get_defs()
         self._session['params'] = self.get_params()
-        self._session['plot_params'] = self.get_plot_opts()
+        self._session['plot_opts'] = self.get_plot_opts()
 
     def get_rrdplot_args(self, timespan = None):
         def fill(s):
