@@ -8,7 +8,7 @@ import os
 
 #-----------------------------------------------------------------------------
 
-APP_ROOT = os.path.dirname(os.path.dirname(__name__))
+APP_ROOT = os.path.dirname(os.path.dirname(__file__))
 
 RRD_PATH = '/var/lib/collectd/rrd'
 SAVED_GRAPHS = 'graphs'
