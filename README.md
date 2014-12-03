@@ -37,6 +37,11 @@ The timespan is anything that RRDtool accepts, especially in the form of
 `{number}{unit}`, where `{unit}` can be `minute`, `hour`, `day`, `week`,
 `month` or `year` (of course, it's not limited to those).
 
+All editing resides under `.../edit/*` path
+(`http://example.net/plotarrd/edit/` with our current convention for
+examples), so even though Plotarrd doesn't provide any access control, it
+should be fairly easy to add one with HTTP server.
+
 
 Parametrized graphs
 -------------------
