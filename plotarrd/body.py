@@ -38,7 +38,8 @@ def plot():
 
     return flask.render_template('plot.html',
                                  image_url = url,
-                                 values    = plot_def.get_defs(),
+                                 defs      = plot_def.get_defs(),
+                                 cdefs     = plot_def.get_cdefs(),
                                  plot_opts = plot_def.get_plot_opts(),
                                  params    = plot_def.get_params())
 
@@ -89,20 +90,27 @@ def plot_set_variables():
 
     plot_def = PlotParams(session = flask.session)
 
-    if 'delete' in flask.request.values:
-        entry = int(flask.request.values['delete'])
+    if 'delete-def' in flask.request.values:
+        entry = int(flask.request.values['delete-def'])
         plot_def.del_def(entry)
+    elif 'delete-cdef' in flask.request.values:
+        entry = int(flask.request.values['delete-cdef'])
+        plot_def.del_cdef(entry)
     elif flask.request.values['update'] == 'add':
-        # TODO: expressions
         if not path_ok(flask.request.values['newvarexpr']):
             flask.abort(403)
-        plot_def.add_def(
-            name = flask.request.values['newvarname'],
-            rrd  = flask.request.values['newvarexpr'],
-            ds   = flask.request.values['newvards'],
-        )
+        if flask.request.values.get('newvards', '') != '':
+            plot_def.add_def(
+                name = flask.request.values['newvarname'],
+                rrd  = flask.request.values['newvarexpr'],
+                ds   = flask.request.values['newvards'],
+            )
+        else:
+            plot_def.add_cdef(
+                name = flask.request.values['newvarname'],
+                expr = flask.request.values['newvarexpr'],
+            )
     else:
-        # TODO: expressions
         names = flask.request.values.getlist('name')
         rrds = flask.request.values.getlist('rrd')
         dses = flask.request.values.getlist('ds')
@@ -112,6 +120,12 @@ def plot_set_variables():
         plot_def.set_defs([
             {"rrd": path_filter(rrds[i]), "ds": dses[i], "name": names[i]}
             for i in range(len(rrds))
+        ])
+        enames = flask.request.values.getlist('ename')
+        exprs = flask.request.values.getlist('expr')
+        plot_def.set_cdefs([
+            {"expr": exprs[i], "name": enames[i]}
+            for i in range(len(exprs))
         ])
 
     plot_def.session_save()
@@ -178,7 +192,8 @@ def graph(name):
         return flask.render_template('plot.html',
                                      graph_name = name,
                                      image_url = url,
-                                     values    = plot_def.get_defs(),
+                                     defs      = plot_def.get_defs(),
+                                     cdefs     = plot_def.get_cdefs(),
                                      plot_opts = plot_def.get_plot_opts(),
                                      params    = plot_def.get_params())
     except IOError:
@@ -236,11 +251,6 @@ def start_anew():
 
 @app.route("/edit/save", methods = ["POST"])
 def plot_save():
-    # TODO:
-    #   * sanitize the submitted form
-    #   * save the submitted form (flask.request.values.getlist() for "rrd"
-    #     and "ds")
-
     plot_def = PlotParams(session = flask.session)
 
     if 'discard' in flask.request.values:
@@ -259,15 +269,14 @@ def plot_save():
         return flask.redirect(flask.url_for('plot'))
 
     # 'save' in flask.request.values
+
     graph_name = flask.request.values['graph_name']
+    if not re.match(r'^[a-zA-Z0-9_]+$', graph_name):
+        flask.abort(403) # invalid graph name
+
     rrds = flask.request.values.getlist('rrd')
     dses = flask.request.values.getlist('ds')
     names = flask.request.values.getlist('name')
-
-    # TODO: sanity checks (graph_name =~ /^[a-zA-Z0-9_]+$/, list lengths equal
-    # and >0, paths in rrds, names distinct and appropriate, ...)
-    if not re.match(r'^[a-zA-Z0-9_]+$', graph_name):
-        flask.abort(403) # invalid graph name
 
     # NOTE: checking DEFs now is not that necessary, since plotting saved
     # graph still needs to check paths
@@ -277,6 +286,12 @@ def plot_save():
     plot_def.set_defs([
         {"rrd": path_filter(rrds[i]), "ds": dses[i], "name": names[i]}
         for i in range(len(rrds))
+    ])
+    enames = flask.request.values.getlist('ename')
+    exprs = flask.request.values.getlist('expr')
+    plot_def.set_cdefs([
+        {"expr": exprs[i], "name": enames[i]}
+        for i in range(len(exprs))
     ])
 
     params_path = os.path.join(app.config['SAVED_GRAPHS_ABS'],
@@ -352,7 +367,7 @@ def browse_datasources_finish():
 
 def defs_ok(rrd_defs):
     for e in rrd_defs:
-        if not path_ok(e['rrd']):
+        if 'rrd' in e and not path_ok(e['rrd']):
             return False
     return True
 
@@ -365,8 +380,9 @@ class PlotParams:
     _PARAM_RE = re.compile(r'\$\{([a-zA-Z0-9_.-]+)\}')
 
     def __init__(self, session = None, filename = None, b64 = None):
-        # DEF statements
+        # DEF and CDEF statements
         self._graph_def = []
+        self._graph_cdef = []
         self._used_names = None # names in _graph_def (lazily computed)
 
         # parameters to fill ${...} placeholders in labels and DEFs
@@ -397,7 +413,12 @@ class PlotParams:
             session = json.loads(base64.b64decode(b64))
 
         if session.get('graph') is not None:
-            self._graph_def = session['graph']
+            self._graph_def = [
+                d for d in session['graph'] if 'ds' in d and 'rrd' in d
+            ]
+            self._graph_cdef = [
+                d for d in session['graph'] if 'expr' in d
+            ]
         if session.get('params') is not None:
             self._params = session['params']
         if session.get('plot_opts') is not None:
@@ -413,7 +434,7 @@ class PlotParams:
 
     def to_dict(self):
         return {
-            'graph': self._graph_def,
+            'graph': self._graph_def + self._graph_cdef,
             'params': self._params,
             'plot_opts': self.get_plot_opts(),
         }
@@ -432,27 +453,39 @@ class PlotParams:
             del self._session['plot_opts']
 
     def session_save(self):
-        self._session['graph'] = self.get_defs()
+        self._session['graph'] = self.get_defs() + self.get_cdefs()
         self._session['params'] = self.get_params()
         self._session['plot_opts'] = self.get_plot_opts()
 
     def get_rrdplot_args(self, timespan = None):
+        if timespan is None and \
+           self._timespan is not None and self._timespan_unit is not None:
+            timespan = "%d%s" % (self._timespan, self._timespan_unit)
+
         def fill(s):
             if not isinstance(s, (str, unicode)): # this includes `None'
                 return s
+            # split with groups leaves matched group between split elements
             fields = PlotParams._PARAM_RE.split(s)
             for i in range(1, len(fields), 2):
                 fields[i] = self._params.get(fields[i], '')
             return ''.join(fields)
 
-        if timespan is None and \
-           self._timespan is not None and self._timespan_unit is not None:
-            timespan = "%d%s" % (self._timespan, self._timespan_unit)
+        def fill_def(d):
+            if 'rrd' in d and 'ds' in d:
+                return {
+                    'name': fill(d['name']),
+                    'rrd': fill(d['rrd']),
+                    'ds': fill(d['ds']),
+                }
+            elif 'expr' in d:
+                return {
+                    'name': fill(d['name']),
+                    'expr': fill(d['expr']),
+                }
 
-        values = [
-            {'name': fill(d['name']),'rrd': fill(d['rrd']),'ds': fill(d['ds'])}
-            for d in self._graph_def
-        ]
+        values = [fill_def(d) for d in self._graph_def] + \
+                 [fill_def(d) for d in self._graph_cdef]
         opts = {
             'title': fill(self._title),
             'ylabel': fill(self._ylabel),
@@ -462,10 +495,13 @@ class PlotParams:
         }
         return (values, opts)
 
-
     # [ {'name': str(), 'rrd': str(), 'ds': str()} ]
     def get_defs(self):
         return list(self._graph_def) # shallow copy
+
+    # [ {'name': str(), 'expr': str()} ]
+    def get_cdefs(self):
+        return list(self._graph_cdef) # shallow copy
 
     # { Name: DefaultValue, ... }
     def get_params(self):
@@ -497,19 +533,28 @@ class PlotParams:
                 result['timespan_unit'] = self._timespan_unit
         return result
 
-    def add_def(self, name, rrd, ds):
+    def _find_unused_name(self, name):
         if self._used_names is None:
             self._used_names = set()
             for e in self._graph_def:
                 self._used_names.add(e['name'])
 
-        if name in self._used_names:
-            cnt = 1
-            while "%s%d" % (name, cnt) in self._used_names:
-                cnt += 1
-            name = "%s%d" % (name, cnt)
+        if name not in self._used_names:
+            self._used_names.add(name)
+            return name
 
+        cnt = 1
+        while "%s%d" % (name, cnt) in self._used_names:
+            cnt += 1
+        return "%s%d" % (name, cnt)
+
+    def add_def(self, name, rrd, ds):
+        name = self._find_unused_name(name)
         self._graph_def.append({'name': name, 'rrd': rrd, 'ds': ds})
+
+    def add_cdef(self, name, expr):
+        name = self._find_unused_name(name)
+        self._graph_cdef.append({'name': name, 'expr': expr})
 
     def add_param(self, name, default_value):
         self._params[name] = default_value
@@ -535,12 +580,19 @@ class PlotParams:
         if index < len(self._graph_def):
             del self._graph_def[index]
 
+    def del_cdef(self, index):
+        if index < len(self._graph_cdef):
+            del self._graph_cdef[index]
+
     def del_param(self, name):
         if name in self._params:
             del self._params[name]
 
     def set_defs(self, graph_def):
         self._graph_def = graph_def
+
+    def set_cdefs(self, graph_cdef):
+        self._graph_cdef = graph_cdef
 
     def set_params(self, params):
         self._params = params

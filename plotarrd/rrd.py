@@ -41,23 +41,24 @@ def plot(values, rrd_root, width = None, height = None, timespan = None,
 
     for v in values:
         val_name = v['name']
-        datasource = v['ds']
-        rrd_file = os.path.join(rrd_root, v['rrd'])
-        consolidation_function = "AVERAGE" # let's hope it's there
         line_label = val_name
-        colour = _AUTO_COLOURS[auto_colour_idx]
-        auto_colour_idx += 1
 
-        defs.append(
-            "DEF:%s=%s:%s:%s" % (
-                val_name, rrd_file, datasource, consolidation_function
+        if 'rrd' in v and 'ds' in v:
+            datasource = v['ds']
+            rrd_file = os.path.join(rrd_root, v['rrd'])
+            consolidation_function = "AVERAGE" # let's hope it's there
+            defs.append(
+                "DEF:%s=%s:%s:%s" % \
+                    (val_name, rrd_file, datasource, consolidation_function)
             )
-        )
-        lines.append(
-            "LINE:%s%s:%s" % (
-                val_name, colour, line_label
-            )
-        )
+        elif 'expr' in v:
+            expression = v['expr']
+            defs.append("CDEF:%s=%s" % (val_name, expression))
+
+        if not val_name.startswith("_"):
+            colour = _AUTO_COLOURS[auto_colour_idx]
+            auto_colour_idx += 1
+            lines.append("LINE:%s%s:%s" % (val_name, colour, line_label))
 
     rrd_commands = [
         '-', '--imgformat', 'PNG',

@@ -20,10 +20,14 @@
     <img src="{{ image_url }}" />
 {% endif %}
     <form id="save-form" action="{{ url_for('plot_save') }}" method="post">
-{% for v in values %}
+{% for v in defs %}
       <input type="hidden" name="name" value="{{ v.name }}" />
       <input type="hidden" name="rrd" value="{{ v.rrd }}" />
       <input type="hidden" name="ds" value="{{ v.ds }}" />
+{% endfor %}
+{% for v in cdefs %}
+      <input type="hidden" name="ename" value="{{ v.name }}" />
+      <input type="hidden" name="expr"  value="{{ v.expr }}" />
 {% endfor %}
       <label for="graph_name">graph name</label>
       <input type="text" id="graph_name" size="20" name="graph_name"
@@ -96,11 +100,11 @@
       <table class="list">
         <tr>
           <th style="width: 15%">label</th>
-          <th style="width: auto">file</th>
+          <th style="width: auto">file or RPN expression</th>
           <th style="width: 10%">DS</th>
           <th style="width: 10%"></th>
         </tr>
-{% for v in values %}
+{% for v in defs %}
         <tr>
           <td>
             <input type="text" class="cell"
@@ -116,7 +120,26 @@
           </td>
           <td>
             <button type="submit" class="cell"
-              name="delete" value="{{ loop.index0 }}">remove</button>
+              name="delete-def" value="{{ loop.index0 }}">remove</button>
+          </td>
+        </tr>
+{% endfor %}
+{% for v in cdefs %}
+        <tr>
+          <td>
+            <input type="text" class="cell"
+              name="ename" value="{{ v.name }}" />
+          </td>
+          <td>
+            <input type="text" class="cell"
+              name="expr" value="{{ v.expr }}" />
+          </td>
+          <td>
+            <i>expression</i>
+          </td>
+          <td>
+            <button type="submit" class="cell"
+              name="delete-cdef" value="{{ loop.index0 }}">remove</button>
           </td>
         </tr>
 {% endfor %}
