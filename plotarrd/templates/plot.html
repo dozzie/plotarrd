@@ -44,35 +44,35 @@
       <table>
         <tr>
           <td><label for="title">title</label></td>
-          <td><input type="text" size="24" id="title" name="title" value="{{ plot_params.title }}" /></td>
+          <td><input type="text" size="24" id="title" name="title" value="{{ plot_opts.title }}" /></td>
         </tr>
         <tr>
           <td><label for="ylabel">Y label</label></td>
-          <td><input type="text" size="24" id="ylabel" name="ylabel" value="{{ plot_params.ylabel }}" /></td>
+          <td><input type="text" size="24" id="ylabel" name="ylabel" value="{{ plot_opts.ylabel }}" /></td>
         </tr>
         <tr>
           <td><label>Y range</label></td>
           <td>
             <label for="ymin">min:</label>
-            <input type="text" class="number" size="5" id="ymin" name="ymin" value="{{ plot_params.ymin }}" />
+            <input type="text" class="number" size="5" id="ymin" name="ymin" value="{{ plot_opts.ymin }}" />
             <label for="ymax">max:</label>
-            <input type="text" class="number" size="5" id="ymax" name="ymax" value="{{ plot_params.ymax }}" />
+            <input type="text" class="number" size="5" id="ymax" name="ymax" value="{{ plot_opts.ymax }}" />
           </td>
         </tr>
         <tr>
           <td><label for="timespan">time span</label></td>
           <td>
             <input type="text" class="number" size="5"
-              id="timespan" name="timespan" value="{{ plot_params.timespan }}" />
+              id="timespan" name="timespan" value="{{ plot_opts.timespan }}" />
             <select name="timespan_unit">
               <option value="h"
-                {% if plot_params.timespan_unit == "h" %} selected="true"{% endif %}>hours</option>
+                {% if plot_opts.timespan_unit == "h" %} selected="true"{% endif %}>hours</option>
               <option value="d"
-                {% if plot_params.timespan_unit not in ["h", "w", "m"] %} selected="true"{% endif %}>days</option>
+                {% if plot_opts.timespan_unit not in ["h", "w", "m"] %} selected="true"{% endif %}>days</option>
               <option value="w"
-                {% if plot_params.timespan_unit == "w" %} selected="true"{% endif %}>weeks</option>
+                {% if plot_opts.timespan_unit == "w" %} selected="true"{% endif %}>weeks</option>
               <option value="m"
-                {% if plot_params.timespan_unit == "m" %} selected="true"{% endif %}>months</option>
+                {% if plot_opts.timespan_unit == "m" %} selected="true"{% endif %}>months</option>
             </select>
           </td>
         </tr>

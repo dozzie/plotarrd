@@ -38,9 +38,9 @@ def plot():
 
     return flask.render_template('plot.html',
                                  image_url = url,
-                                 values      = plot_def.get_defs(),
-                                 plot_params = plot_def.get_plot_opts(),
-                                 params      = plot_def.get_params())
+                                 values    = plot_def.get_defs(),
+                                 plot_opts = plot_def.get_plot_opts(),
+                                 params    = plot_def.get_params())
 
 #-----------------------------------------------------------------------------
 
@@ -178,9 +178,9 @@ def graph(name):
         return flask.render_template('plot.html',
                                      graph_name = name,
                                      image_url = url,
-                                     values      = plot_def.get_defs(),
-                                     plot_params = plot_def.get_plot_opts(),
-                                     params      = plot_def.get_params())
+                                     values    = plot_def.get_defs(),
+                                     plot_opts = plot_def.get_plot_opts(),
+                                     params    = plot_def.get_params())
     except IOError:
         flask.abort(404)
 
